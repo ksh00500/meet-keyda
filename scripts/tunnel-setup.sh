@@ -12,8 +12,9 @@ IMAGE="cloudflare/cloudflared:latest"
 DIR="$(cd "$(dirname "$0")/.." && pwd)/cloudflared"
 mkdir -p "$DIR"
 
+# 서버 사용자와 같은 uid로 실행해야 만든 파일을 나중에 chmod 할 수 있다
 cf() {
-  docker run --rm ${TTY:-} --user 0 -e HOME=/home/nonroot \
+  docker run --rm ${TTY:-} --user "$(id -u):$(id -g)" -e HOME=/home/nonroot \
     -v "$DIR:/home/nonroot/.cloudflared" "$IMAGE" "$@"
 }
 
@@ -41,7 +42,13 @@ sed -e "s/<TUNNEL_ID>/$ID/g" -e "s/meet\.keyda\.site/$HOST/" "$DIR/config.exampl
 
 # cloudflared 컨테이너는 nonroot 사용자로 돌기 때문에 읽을 수 있게 권한을 맞춘다.
 chmod 755 "$DIR"
-chmod 644 "$DIR/config.yml" "$CRED"
+if ! chmod 644 "$DIR/config.yml" "$CRED" 2>/dev/null; then
+  echo
+  echo "권한을 바꾸지 못했습니다 (예전 버전 스크립트가 root로 만든 파일). 아래 두 줄을 실행하세요:"
+  echo "  sudo chown -R \$(id -u):\$(id -g) \"$DIR\""
+  echo "  chmod 644 \"$DIR/config.yml\" \"$CRED\""
+  exit 1
+fi
 chmod 600 "$DIR/cert.pem" 2>/dev/null || true
 
 echo
