@@ -1,60 +1,158 @@
-import { ChevronLeft, ChevronRight, EyeOff, ListChecks } from 'lucide-react';
-import { useCallback, useEffect, useState } from 'react';
+import { CalendarDays, CalendarRange, ChevronLeft, ChevronRight, EyeOff, ListChecks } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { daySummary, periodStates } from '../../../server/domain/availability.js';
 import { addDays, weekday } from '../../../server/domain/time.js';
 import { navigate } from '../App.js';
 import { api, local, type CalendarDay, type Config } from '../api.js';
 import { monthLabel, shiftMonth } from '../format.js';
 import { DayPanel } from './DayPanel.js';
+import { DEFAULT_FROM, DEFAULT_TO, Timeline } from './Timeline.js';
 
 const WEEK = ['일', '월', '화', '수', '목', '금', '토'];
-const STATE_LABEL = { free: '여유', partial: '일부 가능', full: '불가', closed: '신청 기간 아님' } as const;
+const CLOSED_LABEL = '신청 기간 아님';
+type View = 'month' | 'week';
+type Mine = Map<string, 'pending' | 'confirmed'>;
+
+const VIEW_KEY = 'meet.view';
+function savedView(): View {
+  try {
+    const v = localStorage.getItem(VIEW_KEY);
+    if (v === 'month' || v === 'week') return v;
+  } catch {
+    /* 저장소를 못 써도 기본값 */
+  }
+  return 'month';
+}
+
+function weekStart(date: string): string {
+  return addDays(date, -weekday(date));
+}
 
 export function CalendarPage({ config }: { config: Config }) {
   const firstMonth = config.bookableFrom.slice(0, 7);
   const lastMonth = config.bookableTo.slice(0, 7);
+  const firstWeek = weekStart(config.bookableFrom);
+  const lastWeek = weekStart(config.bookableTo);
+
+  const [view, setViewState] = useState<View>(savedView);
   const [month, setMonth] = useState(firstMonth);
-  const [days, setDays] = useState<CalendarDay[] | null>(null);
+  const [week, setWeek] = useState(firstWeek);
+  const [cache, setCache] = useState<Record<string, CalendarDay[]>>({});
   const [error, setError] = useState<string | null>(null);
   const [selected, setSelected] = useState<string | null>(null);
+  const [mineDates, setMineDates] = useState<Mine>(new Map());
   const hasMine = local.tokens().length > 0;
-  // 이 기기에서 신청한 날짜 (신청 중·확정) → 캘린더에 레몬 점
-  const [mineDates, setMineDates] = useState<Map<string, 'pending' | 'confirmed'>>(new Map());
 
-  const load = useCallback(() => {
-    setError(null);
-    api
-      .calendar(month)
-      .then((r) => setDays(r.days))
-      .catch((e: Error) => setError(e.message));
-    const tokens = local.tokens();
-    if (tokens.length > 0) {
-      api
-        .mine(tokens)
-        .then((r) => {
-          const m = new Map<string, 'pending' | 'confirmed'>();
-          for (const b of r.bookings) {
-            if (b.status === 'pending' || b.status === 'confirmed') {
-              const d = b.start.slice(0, 10);
-              if (m.get(d) !== 'confirmed') m.set(d, b.status);
-            }
-          }
-          setMineDates(m);
-        })
-        .catch(() => undefined);
+  const setView = (v: View) => {
+    setViewState(v);
+    try {
+      localStorage.setItem(VIEW_KEY, v);
+    } catch {
+      /* 무시 */
     }
-  }, [month]);
+    // 보던 위치를 이어서: 월간 → 그 달의 첫 신청 가능 주, 주간 → 그 주의 달
+    if (v === 'week') {
+      const start = weekStart(month === firstMonth ? config.bookableFrom : `${month}-01`);
+      setWeek(start < firstWeek ? firstWeek : start > lastWeek ? lastWeek : start);
+    } else {
+      const m = addDays(week, 3).slice(0, 7);
+      setMonth(m < firstMonth ? firstMonth : m > lastMonth ? lastMonth : m);
+    }
+  };
+
+  // 지금 화면에 필요한 달 (주간은 두 달에 걸칠 수 있음)
+  const neededMonths = useMemo(() => {
+    if (view === 'month') return [month];
+    const a = week.slice(0, 7);
+    const b = addDays(week, 6).slice(0, 7);
+    return a === b ? [a] : [a, b];
+  }, [view, month, week]);
+
+  const loaded = useRef(new Set<string>());
+  const loadMonths = useCallback((months: string[], force = false) => {
+    setError(null);
+    for (const m of months) {
+      if (!force && loaded.current.has(m)) continue;
+      loaded.current.add(m);
+      api
+        .calendar(m)
+        .then((r) => setCache((c) => ({ ...c, [m]: r.days })))
+        .catch((e: Error) => {
+          loaded.current.delete(m);
+          setError(e.message);
+        });
+    }
+  }, []);
+
+  const loadMine = useCallback(() => {
+    const tokens = local.tokens();
+    if (tokens.length === 0) return;
+    api
+      .mine(tokens)
+      .then((r) => {
+        const m: Mine = new Map();
+        for (const b of r.bookings) {
+          if (b.status === 'pending' || b.status === 'confirmed') {
+            const d = b.start.slice(0, 10);
+            if (m.get(d) !== 'confirmed') m.set(d, b.status);
+          }
+        }
+        setMineDates(m);
+      })
+      .catch(() => undefined);
+  }, []);
 
   useEffect(() => {
-    setDays(null);
-    load();
-  }, [load]);
+    loadMonths(neededMonths);
+  }, [neededMonths, loadMonths]);
+  useEffect(loadMine, [loadMine]);
 
-  const selectedDay = days?.find((d) => d.date === selected) ?? null;
-  // 첫 달은 신청 가능한 날이 있는 주부터 보여 준다 (지난 주들로 화면을 채우지 않게)
-  const cutoff = month === firstMonth ? weekStart(config.bookableFrom) : null;
-  const shown = (days ?? []).filter((d) => !cutoff || d.date >= cutoff);
-  const lead = shown.length ? weekday(shown[0].date) : 0;
+  // 신청 뒤 새로 불러오기. 캐시를 비우지 않아야 열린 날짜 창이 닫히지 않는다
+  const refresh = () => {
+    loaded.current.clear();
+    loadMonths(neededMonths, true);
+    loadMine();
+  };
+
+  const byDate = useMemo(() => {
+    const m = new Map<string, CalendarDay>();
+    for (const days of Object.values(cache)) for (const d of days) m.set(d.date, d);
+    return m;
+  }, [cache]);
+
+  const selectedDay = selected ? byDate.get(selected) ?? null : null;
+  const ready = neededMonths.every((m) => cache[m]);
+
+  // 월간: 첫 달은 신청 가능한 날이 있는 주부터
+  const monthDaysShown = (cache[month] ?? []).filter((d) => month !== firstMonth || d.date >= firstWeek);
+  const lead = monthDaysShown.length ? weekday(monthDaysShown[0].date) : 0;
+  const weekDays = Array.from({ length: 7 }, (_, i) => byDate.get(addDays(week, i))).filter(
+    (d): d is CalendarDay => !!d,
+  );
+
+  const title =
+    view === 'month'
+      ? monthLabel(month)
+      : `${Number(week.slice(5, 7))}월 ${Number(week.slice(8))}일 – ${
+          addDays(week, 6).slice(5, 7) === week.slice(5, 7) ? '' : `${Number(addDays(week, 6).slice(5, 7))}월 `
+        }${Number(addDays(week, 6).slice(8))}일`;
+  const canPrev = view === 'month' ? month > firstMonth : week > firstWeek;
+  const canNext = view === 'month' ? month < lastMonth : week < lastWeek;
+  const go = (delta: number) =>
+    view === 'month' ? setMonth(shiftMonth(month, delta)) : setWeek(addDays(week, 7 * delta));
+
+  const dayInfo = (d: CalendarDay) => {
+    const n = Number(d.date.slice(8));
+    const mine = mineDates.get(d.date);
+    const isToday = d.date === config.today;
+    const periods = periodStates(d.date, d.blocks);
+    const summary = d.state === 'full' ? '불가' : daySummary(periods);
+    const disabled = d.state === 'closed' || d.state === 'full';
+    const label = `${Number(d.date.slice(5, 7))}월 ${n}일 ${WEEK[weekday(d.date)]}요일, ${isToday ? '오늘, ' : ''}${
+      d.state === 'closed' ? CLOSED_LABEL : summary
+    }${mine ? `, 내 신청 ${mine === 'confirmed' ? '확정' : '신청 중'}` : ''}`;
+    return { n, mine, isToday, periods, summary, disabled, label };
+  };
 
   return (
     <div className={selectedDay ? 'layout layout--with-panel' : 'layout'}>
@@ -72,94 +170,133 @@ export function CalendarPage({ config }: { config: Config }) {
         </header>
 
         <section className="calendar" aria-label="약속 캘린더">
+          <div className="calendar__bar">
+            <div className="segmented" role="tablist" aria-label="보기 방식">
+              <button role="tab" aria-selected={view === 'month'} onClick={() => setView('month')}>
+                <CalendarDays size={16} aria-hidden /> 월간
+              </button>
+              <button role="tab" aria-selected={view === 'week'} onClick={() => setView('week')}>
+                <CalendarRange size={16} aria-hidden /> 주간
+              </button>
+            </div>
+          </div>
+
           <div className="calendar__head">
-            <button
-              className="icon-btn"
-              onClick={() => setMonth(shiftMonth(month, -1))}
-              disabled={month <= firstMonth}
-              aria-label="이전 달"
-            >
+            <button className="icon-btn" onClick={() => go(-1)} disabled={!canPrev} aria-label={view === 'month' ? '이전 달' : '이전 주'}>
               <ChevronLeft size={22} />
             </button>
-            <h2>{monthLabel(month)}</h2>
-            <button
-              className="icon-btn"
-              onClick={() => setMonth(shiftMonth(month, 1))}
-              disabled={month >= lastMonth}
-              aria-label="다음 달"
-            >
+            <h2 aria-live="polite">{title}</h2>
+            <button className="icon-btn" onClick={() => go(1)} disabled={!canNext} aria-label={view === 'month' ? '다음 달' : '다음 주'}>
               <ChevronRight size={22} />
             </button>
           </div>
 
-          <div className="legend" aria-label="표시 안내">
-            <span className="legend__sample" aria-hidden>
-              <i className="seg seg--free" />
-              <i className="seg seg--free" />
-              <i className="seg seg--free" />
-            </span>
-            <span className="legend__text">칸 아래 세 칸은 <b>오전 · 오후 · 저녁</b></span>
-            <span className="legend__keys">
-              <span><i className="seg seg--free" aria-hidden />가능</span>
-              <span><i className="seg seg--some" aria-hidden />일부 가능</span>
-              <span><i className="seg seg--busy" aria-hidden />불가</span>
-              <span><i className="seg seg--booked" aria-hidden />예약됨</span>
-              {mineDates.size > 0 && (
-                <span><i className="dot dot--pending" aria-hidden />내 신청</span>
-              )}
-            </span>
-          </div>
-
-          <div className="grid grid--week" aria-hidden>
-            {WEEK.map((w, i) => (
-              <span key={w} className={i === 0 ? 'week week--sun' : i === 6 ? 'week week--sat' : 'week'}>
-                {w}
+          {view === 'month' ? (
+            <div className="legend" aria-label="표시 안내">
+              <span className="legend__sample" aria-hidden>
+                <i className="seg seg--free" />
+                <i className="seg seg--free" />
+                <i className="seg seg--free" />
               </span>
-            ))}
-          </div>
+              <span className="legend__text">
+                칸 아래 표시는 <b>오전 · 오후 · 저녁</b>
+              </span>
+              <Keys mine={mineDates.size > 0} />
+            </div>
+          ) : (
+            <div className="legend" aria-label="표시 안내">
+              <span className="legend__text">막대는 하루 8시–23시예요. 빈 곳이 약속 가능한 시간이에요.</span>
+              <Keys mine={mineDates.size > 0} week />
+            </div>
+          )}
 
           {error ? (
             <div className="notice notice--error" role="alert">
               <p>캘린더를 못 불러왔어요. 잠시 후 다시 시도해 주세요.</p>
-              <button className="btn" onClick={load}>다시 시도</button>
+              <button className="btn" onClick={refresh}>
+                다시 시도
+              </button>
             </div>
+          ) : view === 'month' ? (
+            <>
+              <div className="grid grid--week" aria-hidden>
+                {WEEK.map((w, i) => (
+                  <span key={w} className={i === 0 ? 'week week--sun' : i === 6 ? 'week week--sat' : 'week'}>
+                    {w}
+                  </span>
+                ))}
+              </div>
+              <div className="grid grid--days" aria-busy={!ready}>
+                {Array.from({ length: lead }, (_, i) => (
+                  <span key={`lead-${i}`} />
+                ))}
+                {monthDaysShown.map((d) => {
+                  const x = dayInfo(d);
+                  return (
+                    <button
+                      key={d.date}
+                      className={`day day--${d.state}${selected === d.date ? ' day--selected' : ''}`}
+                      disabled={x.disabled}
+                      onClick={() => setSelected(d.date)}
+                      aria-label={x.label}
+                      aria-pressed={selected === d.date}
+                    >
+                      <span className="day__top">
+                        <span className="day__num">{x.n}</span>
+                        {x.mine && <span className={`dot dot--${x.mine}`} aria-hidden />}
+                      </span>
+                      {x.isToday ? (
+                        <span className="day__note day__note--today">오늘</span>
+                      ) : d.state !== 'closed' ? (
+                        <span className={`day__note${d.state === 'full' ? ' day__note--full' : ''}`}>{x.summary}</span>
+                      ) : null}
+                      {d.state !== 'closed' && (
+                        <span className="segs" aria-hidden>
+                          {x.periods.map((p, i) => (
+                            <i key={i} className={`seg seg--${p}`} />
+                          ))}
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            </>
           ) : (
-            <div className="grid grid--days" aria-busy={!days}>
-              {Array.from({ length: lead }, (_, i) => (
-                <span key={`lead-${i}`} />
-              ))}
-              {shown.map((d) => {
-                const n = Number(d.date.slice(8));
-                const disabled = d.state === 'closed' || d.state === 'full';
-                const mine = mineDates.get(d.date);
-                const isToday = d.date === config.today;
-                const periods = periodStates(d.date, d.blocks);
-                const summary = d.state === 'full' ? '불가' : daySummary(periods);
+            <div className="weekview" aria-busy={!ready}>
+              <div className="wrow wrow--scale" aria-hidden>
+                <span />
+                <span className="wscale">
+                  {[9, 12, 15, 18, 21].map((h) => (
+                    <span key={h} style={{ left: `${((h * 60 - DEFAULT_FROM) / (DEFAULT_TO - DEFAULT_FROM)) * 100}%` }}>
+                      {h}시
+                    </span>
+                  ))}
+                </span>
+              </div>
+              {weekDays.map((d) => {
+                const x = dayInfo(d);
+                const wd = weekday(d.date);
                 return (
                   <button
                     key={d.date}
-                    className={`day day--${d.state}${selected === d.date ? ' day--selected' : ''}${isToday ? ' day--today' : ''}`}
-                    disabled={disabled}
+                    className={`wrow wrow--${d.state}${selected === d.date ? ' wrow--selected' : ''}`}
+                    disabled={x.disabled}
                     onClick={() => setSelected(d.date)}
-                    aria-label={`${Number(d.date.slice(5, 7))}월 ${n}일, ${isToday ? '오늘, ' : ''}${d.state === 'closed' ? STATE_LABEL.closed : summary}${mine ? `, 내 신청 ${mine === 'confirmed' ? '확정' : '신청 중'}` : ''}`}
+                    aria-label={x.label}
                     aria-pressed={selected === d.date}
                   >
-                    <span className="day__top">
-                      <span className="day__num">{n}</span>
-                      {mine && <span className={`dot dot--${mine}`} aria-hidden />}
+                    <span className={`wdate${wd === 0 ? ' wdate--sun' : wd === 6 ? ' wdate--sat' : ''}`}>
+                      <b>{x.n}</b>
+                      <small>{WEEK[wd]}</small>
                     </span>
-                    {isToday ? (
-                      <span className="day__note day__note--today">오늘</span>
-                    ) : d.state !== 'closed' ? (
-                      <span className={`day__note${d.state === 'full' ? ' day__note--full' : ''}`}>{summary}</span>
-                    ) : null}
-                    {d.state !== 'closed' && (
-                      <span className="segs" aria-hidden>
-                        {periods.map((p, i) => (
-                          <i key={i} className={`seg seg--${p}`} />
-                        ))}
+                    <span className="wbody">
+                      <span className="wnote">
+                        {x.mine && <span className={`dot dot--${x.mine}`} aria-hidden />}
+                        {d.state === 'closed' ? (x.isToday ? '오늘' : CLOSED_LABEL) : x.isToday ? '오늘' : x.summary}
                       </span>
-                    )}
+                      {d.state !== 'closed' && <Timeline date={d.date} blocks={d.blocks} row />}
+                    </span>
                   </button>
                 );
               })}
@@ -177,13 +314,47 @@ export function CalendarPage({ config }: { config: Config }) {
           config={config}
           day={selectedDay}
           onClose={() => setSelected(null)}
-          onBooked={load}
+          onBooked={refresh}
         />
       )}
     </div>
   );
 }
 
-function weekStart(date: string): string {
-  return addDays(date, -weekday(date));
+function Keys({ mine, week }: { mine: boolean; week?: boolean }) {
+  return (
+    <span className="legend__keys">
+      {!week && (
+        <>
+          <span>
+            <i className="seg seg--free" aria-hidden />
+            가능
+          </span>
+          <span>
+            <i className="seg seg--some" aria-hidden />
+            일부 가능
+          </span>
+        </>
+      )}
+      {week && (
+        <span>
+          <i className="seg seg--blank" aria-hidden />
+          가능
+        </span>
+      )}
+      <span>
+        <i className="seg seg--busy" aria-hidden />
+        불가
+      </span>
+      <span>
+        <i className="seg seg--booked" aria-hidden />
+        예약됨
+      </span>
+      {mine && (
+        <span>
+          <i className="dot dot--pending" aria-hidden />내 신청
+        </span>
+      )}
+    </span>
+  );
 }

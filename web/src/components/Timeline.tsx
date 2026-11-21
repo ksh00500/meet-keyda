@@ -1,8 +1,8 @@
 import type { DayBlock } from '../../../server/domain/availability.js';
 import { STEP_MIN, minToTime, timeToMin } from '../../../server/domain/time.js';
 
-const DEFAULT_FROM = 8 * 60;
-const DEFAULT_TO = 23 * 60;
+export const DEFAULT_FROM = 8 * 60;
+export const DEFAULT_TO = 23 * 60;
 const LABEL = { busy: '불가', booked: '예약됨' } as const;
 
 /** 시각 문자열 → 그날 0시부터 분 (전날이면 0, 다음 날이면 1440) */
@@ -43,12 +43,14 @@ interface Props {
   /** 고른 구간 (미리 보기) */
   selection?: { start: string; end: string } | null;
   compact?: boolean;
+  /** 주간 보기용 한 줄 막대 (눈금 선과 구간 글자만) */
+  row?: boolean;
   /** 빈 곳을 눌렀을 때: 시작·끝 "HH:MM" */
   onPick?: (start: string, end: string) => void;
 }
 
 /** 하루 시간 막대. 불가는 빗금, 예약됨은 회색, 빈 시간은 눌러서 고를 수 있다 */
-export function Timeline({ date, blocks, selection, compact, onPick }: Props) {
+export function Timeline({ date, blocks, selection, compact, row, onPick }: Props) {
   const selFrom = selection ? dayMin(selection.start, date) : null;
   const selTo = selection ? dayMin(selection.end, date) : null;
   const from = compact ? DEFAULT_FROM : Math.min(DEFAULT_FROM, selFrom ?? DEFAULT_FROM);
@@ -79,6 +81,26 @@ export function Timeline({ date, blocks, selection, compact, onPick }: Props) {
   const gaps = freeGaps(date, blocks, from, to);
   const hours: number[] = [];
   for (let h = Math.ceil(from / 60); h * 60 <= to; h++) hours.push(h);
+
+  if (row) {
+    return (
+      <div className="timeline timeline--row" aria-hidden>
+        <div className="timeline__track">
+          {hours.map((h) => (
+            <span key={h} className={`timeline__grid${h % 3 === 0 ? ' timeline__grid--major' : ''}`} style={{ left: `${pct(h * 60)}%` }} />
+          ))}
+          {segs.map((s, i) => {
+            const w = pct(s.to) - pct(s.from);
+            return (
+              <span key={i} className={`timeline__block timeline__block--${s.kind}`} style={{ left: `${pct(s.from)}%`, width: `${w}%` }}>
+                {w >= 18 && <span className="timeline__label">{LABEL[s.kind]}</span>}
+              </span>
+            );
+          })}
+        </div>
+      </div>
+    );
+  }
 
   const pickAt = (gap: Seg, clientX: number, rect: DOMRect) => {
     if (!onPick) return;

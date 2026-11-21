@@ -116,6 +116,12 @@
           "saved_at": "2026-11-21T07:33:13+00:00",
           "note": "캘린더 칸 고도화",
           "stage": "build"
+        },
+        {
+          "sha256": "1a7a61e8e37a34eda211994b4deef618d08aeeff9813a3bd751b6baae519c643",
+          "saved_at": "2026-11-21T07:37:45+00:00",
+          "note": "세로 막대, 주간 보기",
+          "stage": "build"
         }
       ]
     }
@@ -507,6 +513,32 @@
           "log_sha256": "59e6b7d8e649037e5a87800127ff5dadde28eb03692c496b819997143bb027b1"
         }
       ]
+    },
+    {
+      "id": "T14",
+      "title": "T14 세로 화면 긴 막대 + 주간 보기",
+      "must": true,
+      "status": "verified",
+      "history": [
+        {
+          "status": "todo",
+          "at": "2026-11-21T07:37:45+00:00"
+        },
+        {
+          "status": "verified",
+          "note": "node tests/e2e/weekview.cjs (+ shots, flow2, timeline, vitest)",
+          "at": "2026-11-21T07:37:45+00:00"
+        }
+      ],
+      "evidence": [
+        {
+          "command": "node tests/e2e/weekview.cjs (+ shots, flow2, timeline, vitest)",
+          "exit_code": 0,
+          "at": "2026-11-21T07:37:45+00:00",
+          "log": "logs/e2e-weekview.log",
+          "log_sha256": "007b5c6dc75db33536ae4562b3d56c64745aed49e462ef68510fd90a7df75203"
+        }
+      ]
     }
   ],
   "cuts": [
@@ -541,5 +573,5 @@
       "at": "2026-11-21T06:00:36+00:00"
     }
   ],
-  "updated_at": "2026-11-21T07:33:13+00:00"
+  "updated_at": "2026-11-21T07:37:45+00:00"
 }
