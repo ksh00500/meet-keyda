@@ -931,6 +931,12 @@ button:disabled {
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px;
 }
+.chips--four {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.chips--extra {
+  margin-top: 8px;
+}
 .chip {
   min-height: 60px;
   display: flex;
@@ -1375,4 +1381,229 @@ button:disabled {
     animation: none !important;
     transition: none !important;
   }
+}
+
+/* ---------- 관리자 화면 ---------- */
+.page--admin {
+  max-width: 1180px;
+}
+.pending-pill {
+  vertical-align: middle;
+  margin-left: 8px;
+  border: 1.5px solid var(--ink);
+  background: var(--lemon);
+  border-radius: 999px;
+  padding: 2px 12px;
+  font-size: var(--fs-sm);
+  font-weight: 700;
+}
+.tabs--sub {
+  margin-top: 4px;
+}
+.tab--sub {
+  min-height: 34px;
+  padding: 4px 12px;
+  font-size: var(--fs-sm);
+}
+.admin-cal {
+  display: grid;
+  gap: 16px;
+}
+@media (min-width: 960px) {
+  .admin-cal--with-panel {
+    grid-template-columns: minmax(0, 1fr) 400px;
+    align-items: start;
+  }
+  .admin-cal--with-panel .panel {
+    margin-top: 0;
+  }
+}
+.aday {
+  min-height: 72px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 5px 4px;
+  border: 1.5px solid transparent;
+  border-radius: var(--r);
+  background: var(--paper);
+  box-shadow: 0 1px 0 rgba(31, 42, 42, 0.06);
+  text-align: left;
+  overflow: hidden;
+}
+@media (min-width: 560px) {
+  .aday {
+    min-height: 104px;
+    padding: 7px 6px;
+  }
+}
+@media (hover: hover) {
+  .aday:hover {
+    border-color: var(--teal-deep);
+  }
+}
+.aday--past {
+  opacity: 0.55;
+}
+.aday--today .aday__num {
+  color: var(--teal-deep);
+  text-decoration: underline 2px var(--teal);
+  text-underline-offset: 3px;
+}
+.aday--selected {
+  border-color: var(--ink);
+  box-shadow: inset 0 0 0 2px var(--teal);
+}
+.aday__num {
+  font-weight: 700;
+  font-size: var(--fs-sm);
+  font-variant-numeric: tabular-nums;
+}
+.aday__items {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+.aitem {
+  display: block;
+  font-size: 11px;
+  line-height: 1.35;
+  border-radius: 4px;
+  padding: 0 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.aitem__time {
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+}
+.aitem--busy {
+  background: #fbd9d1;
+}
+.aitem--pending {
+  background: var(--lemon);
+}
+.aitem--confirmed {
+  background: #cfe6e5;
+}
+.aitem--more {
+  color: var(--ink-soft);
+  font-weight: 700;
+}
+/* 휴대폰 관리자 칸: 글자 대신 색 막대만 */
+@media (max-width: 559px) {
+  .aitem {
+    height: 5px;
+    padding: 0;
+    font-size: 0;
+  }
+  .aitem--more {
+    height: auto;
+    font-size: 10px;
+  }
+}
+.aitem-dot {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border-radius: 4px;
+  border: 1px solid rgba(31, 42, 42, 0.25);
+}
+.aitem-dot--busy {
+  background: #fbd9d1;
+}
+.aitem-dot--pending {
+  background: var(--lemon);
+}
+.aitem-dot--confirmed {
+  background: #cfe6e5;
+}
+.section-title--sm {
+  font-size: var(--fs-sm);
+  margin: 16px 0 8px;
+}
+.alist {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+.alist__item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  background: var(--paper);
+  border-radius: var(--r);
+  padding: 10px 12px;
+  box-shadow: inset 5px 0 0 var(--line);
+}
+.alist__item--busy {
+  box-shadow: inset 5px 0 0 var(--salmon);
+}
+.alist__item--pending {
+  box-shadow: inset 5px 0 0 #f3dc5a;
+}
+.alist__item--confirmed {
+  box-shadow: inset 5px 0 0 var(--teal);
+}
+.alist__when {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.alist__what {
+  font-size: var(--fs-sm);
+  color: var(--ink-soft);
+}
+.alist__what strong {
+  color: var(--ink);
+}
+.add-busy-open {
+  margin: 16px 0 calc(16px + env(safe-area-inset-bottom));
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+.add-busy {
+  display: grid;
+  gap: 12px;
+  margin: 16px 0 calc(16px + env(safe-area-inset-bottom));
+  padding: 14px;
+  border-radius: var(--r);
+  background: var(--paper);
+}
+.add-busy .section-title--sm {
+  margin: 0;
+}
+.custom--flat {
+  margin-top: 0;
+  padding: 0;
+  background: transparent;
+}
+.check {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 36px;
+  font-weight: 600;
+}
+.check input {
+  width: 20px;
+  height: 20px;
+  accent-color: var(--teal-deep);
+}
+.field input[type='date'] {
+  font-variant-numeric: tabular-nums;
+}
+.settings {
+  display: grid;
+  gap: 4px;
+  max-width: 560px;
+}
+.settings .card p + p {
+  margin-top: 6px;
 }

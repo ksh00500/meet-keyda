@@ -9,6 +9,7 @@ export interface Config {
   bookableFrom: string;
   bookableTo: string;
   slots: SlotDef[];
+  allday: SlotDef;
 }
 
 export interface CalendarDay {
@@ -43,6 +44,25 @@ export interface Busy {
   seriesId: string | null;
 }
 
+export interface OwnerDay {
+  date: string;
+  busy: Busy[];
+  bookings: OwnerBooking[];
+}
+
+export interface Settings {
+  siteTitle: string;
+  bookingUntil: string | null;
+  source: { siteTitle: 'env' | 'admin'; bookingUntil: 'env' | 'admin' };
+}
+
+export type AddBusyBody =
+  | { blocks: { start: string; end: string; title?: string }[] }
+  | {
+      repeat: { weekdays: number[]; startTime: string; endTime: string; from: string; until: string };
+      title?: string;
+    };
+
 export class ApiError extends Error {
   constructor(
     readonly status: number,
@@ -54,10 +74,11 @@ export class ApiError extends Error {
   }
 }
 
-async function request<T>(path: string, init: RequestInit & { ownerKey?: string } = {}): Promise<T> {
+async function request<T>(path: string, init: RequestInit & { admin?: boolean } = {}): Promise<T> {
   const headers = new Headers(init.headers);
   if (init.body) headers.set('Content-Type', 'application/json');
-  if (init.ownerKey) headers.set('Authorization', `Bearer ${init.ownerKey}`);
+  // 관리자 요청 표시 (서버가 쿠키 로그인으로 바꾸는 요청에 이 헤더를 요구한다)
+  if (init.admin) headers.set('x-meet-admin', '1');
   let res: Response;
   try {
     res = await fetch(path, { ...init, headers });
@@ -83,7 +104,8 @@ export const api = {
   calendar: (month: string) => request<{ month: string; days: CalendarDay[] }>(`/api/calendar?month=${month}`),
   createBooking: (body: {
     date: string;
-    slot: SlotKind;
+    slot?: SlotKind;
+    slots?: string[];
     start?: string;
     end?: string;
     name: string;
@@ -95,31 +117,34 @@ export const api = {
     request<{ bookings: (FriendBooking & { token: string })[] }>('/api/bookings/lookup', post({ name, pin })),
   cancelMine: (id: string, tokens: string[]) => request<FriendBooking>(`/api/bookings/${id}/cancel`, post({ tokens })),
 
-  owner: {
-    summary: (key: string) =>
-      request<{ pendingCount: number; nextConfirmed: OwnerBooking | null }>('/api/owner/summary', { ownerKey: key }),
-    bookings: (key: string, status: BookingStatus | 'all', past = false) =>
-      request<{ bookings: OwnerBooking[] }>(`/api/owner/bookings?status=${status}${past ? '&past=1' : ''}`, {
-        ownerKey: key,
-      }),
-    decide: (key: string, id: string, action: 'confirm' | 'reject', reason?: string) =>
+  admin: {
+    login: (password: string) => request<{ ok: true }>('/api/admin/login', post({ password })),
+    logout: () => request<{ ok: true }>('/api/admin/logout', { method: 'POST', admin: true }),
+    me: () => request<{ ok: true }>('/api/owner/me'),
+    summary: () => request<{ pendingCount: number; nextConfirmed: OwnerBooking | null }>('/api/owner/summary'),
+    bookings: (status: BookingStatus | 'all', past = false) =>
+      request<{ bookings: OwnerBooking[] }>(`/api/owner/bookings?status=${status}${past ? '&past=1' : ''}`),
+    calendar: (month: string) => request<{ days: OwnerDay[] }>(`/api/owner/calendar?month=${month}`),
+    decide: (id: string, action: 'confirm' | 'reject', reason?: string) =>
       request<{ booking: OwnerBooking; conflicts: Busy[] }>(`/api/owner/bookings/${id}/decide`, {
         ...post({ action, reason }),
-        ownerKey: key,
+        admin: true,
       }),
-    cancel: (key: string, id: string, reason?: string) =>
-      request<{ booking: OwnerBooking }>(`/api/owner/bookings/${id}/cancel`, { ...post({ reason }), ownerKey: key }),
-    busy: (key: string) => request<{ busy: Busy[] }>('/api/owner/busy', { ownerKey: key }),
-    removeBusy: (key: string, id: string) =>
-      request<{ removed: number }>(`/api/owner/busy/${id}`, { method: 'DELETE', ownerKey: key }),
-    removeSeries: (key: string, seriesId: string) =>
-      request<{ removed: number }>(`/api/owner/busy-series/${seriesId}`, { method: 'DELETE', ownerKey: key }),
+    cancel: (id: string, reason?: string) =>
+      request<{ booking: OwnerBooking }>(`/api/owner/bookings/${id}/cancel`, { ...post({ reason }), admin: true }),
+    addBusy: (body: AddBusyBody) =>
+      request<{ created: number; conflicts: OwnerBooking[] }>('/api/owner/busy', { ...post(body), admin: true }),
+    removeBusy: (id: string) => request<{ removed: number }>(`/api/owner/busy/${id}`, { method: 'DELETE', admin: true }),
+    removeSeries: (seriesId: string) =>
+      request<{ removed: number }>(`/api/owner/busy-series/${seriesId}`, { method: 'DELETE', admin: true }),
+    settings: () => request<Settings>('/api/owner/settings'),
+    saveSettings: (body: { siteTitle?: string; bookingUntil?: string }) =>
+      request<Settings>('/api/owner/settings', { method: 'PUT', body: JSON.stringify(body), admin: true }),
   },
 };
 
 // ---------- 브라우저 저장 (실패해도 화면은 동작) ----------
 const TOKENS_KEY = 'meet.tokens';
-const OWNER_KEY = 'meet.ownerKey';
 
 function read(key: string): string | null {
   try {
@@ -150,6 +175,4 @@ export const local = {
     const set = new Set([...local.tokens(), ...tokens]);
     write(TOKENS_KEY, JSON.stringify([...set].slice(-100)));
   },
-  ownerKey: () => read(OWNER_KEY),
-  setOwnerKey: (key: string | null) => write(OWNER_KEY, key),
 };

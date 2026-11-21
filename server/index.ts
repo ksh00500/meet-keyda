@@ -24,23 +24,30 @@ if (ownerKey.length < 24) {
 }
 
 const db = openDb(dbPath);
-const store = new Store(db, undefined, bookingUntil);
+const store = new Store(db, undefined, bookingUntil, siteTitle);
 if (process.env.SEED_DEMO === '1' && seedDemo(store)) console.log('예시 데이터를 넣었습니다 (SEED_DEMO=1).');
 
-const app = createApp({ store, ownerKey, siteTitle });
+const adminPassword = process.env.ADMIN_PASSWORD ?? '';
+if (adminPassword && adminPassword.length < 8) {
+  console.error('ADMIN_PASSWORD는 8자 이상이어야 합니다.');
+  process.exit(1);
+}
+if (!adminPassword) console.warn('ADMIN_PASSWORD가 없어 관리자 화면(/admin)에 로그인할 수 없습니다.');
+const app = createApp({ store, ownerKey, adminPassword });
 
 if (existsSync(webDir)) {
-  const indexHtml = readFileSync(resolve(webDir, 'index.html'), 'utf8').replaceAll('%SITE_TITLE%', escapeHtml(siteTitle));
+  const indexTemplate = readFileSync(resolve(webDir, 'index.html'), 'utf8');
   app.use('/assets/*', serveStatic({ root: webDir }));
   app.use('/favicon.svg', serveStatic({ root: webDir }));
   // 화면 주소(/, /mine, /owner)는 모두 같은 index.html을 보낸다.
-  app.get('*', (c) => c.html(indexHtml));
+  // 관리자 화면에서 제목을 바꿀 수 있으므로 요청마다 현재 제목을 넣는다
+  app.get('*', (c) => c.html(indexTemplate.replaceAll('%SITE_TITLE%', escapeHtml(store.settings().siteTitle))));
 } else {
   console.warn(`화면 파일이 없습니다 (${webDir}). npm run build:web 을 먼저 실행하세요. API와 MCP만 동작합니다.`);
 }
 
 const server = serve({ fetch: app.fetch, port, hostname: '0.0.0.0' }, (info) => {
-  console.log(`${siteTitle} · http://localhost:${info.port} (MCP: /mcp)`);
+  console.log(`${store.settings().siteTitle} · http://localhost:${info.port} (화면 /, 관리자 /admin, MCP /mcp)`);
 });
 
 function shutdown() {

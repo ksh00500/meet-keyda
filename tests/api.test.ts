@@ -1,12 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { jsonHeaders, makeApp, owner } from './helpers.js';
+import { ADMIN_PASSWORD, jsonHeaders, makeApp, owner } from './helpers.js';
 
 describe('친구 API', () => {
   it('설정, 신청, 캘린더 반영, 동시 신청 409', async () => {
     const { app } = makeApp();
     const cfg = await (await app.request('/api/config')).json();
     expect(cfg).toMatchObject({ title: '시호와 약속 잡기', bookableFrom: '2026-11-22', bookableTo: '2027-02-19' });
-    expect(cfg.slots.map((s: { label: string }) => s.label)).toEqual(['점심', '저녁', '오전 반일', '오후 반일', '종일']);
+    expect(cfg.slots.map((s: { label: string }) => s.label)).toEqual(['오전', '점심', '오후', '저녁']);
+    expect(cfg.allday).toMatchObject({ label: '종일', start: '09:00', end: '22:00' });
 
     const body = { date: '2026-12-02', slot: 'dinner', name: '김민지', pin: '1234', memo: '파스타' };
     const r1 = await app.request('/api/bookings', { method: 'POST', headers: jsonHeaders, body: JSON.stringify(body) });
@@ -83,5 +84,54 @@ describe('주인 API', () => {
       await app.request('/api/bookings/mine', { method: 'POST', headers: jsonHeaders, body: JSON.stringify({ tokens: [token] }) })
     ).json();
     expect(mine.bookings[0].status).toBe('confirmed');
+  });
+});
+
+describe('관리자 로그인 (ADMIN_PASSWORD)', () => {
+  async function login(app: ReturnType<typeof makeApp>['app'], password = ADMIN_PASSWORD) {
+    const r = await app.request('/api/admin/login', { method: 'POST', headers: jsonHeaders, body: JSON.stringify({ password }) });
+    return { status: r.status, cookie: (r.headers.get('set-cookie') ?? '').split(';')[0] };
+  }
+
+  it('틀린 비밀번호 401, 맞으면 HttpOnly 쿠키', async () => {
+    const { app } = makeApp();
+    expect((await login(app, 'wrong-pass')).status).toBe(401);
+    const r = await app.request('/api/admin/login', { method: 'POST', headers: jsonHeaders, body: JSON.stringify({ password: ADMIN_PASSWORD }) });
+    expect(r.status).toBe(200);
+    const sc = r.headers.get('set-cookie') ?? '';
+    expect(sc).toMatch(/meet_admin=/);
+    expect(sc).toMatch(/HttpOnly/i);
+    expect(sc).toMatch(/SameSite=Strict/i);
+    expect(sc).not.toContain(ADMIN_PASSWORD);
+  });
+
+  it('쿠키로 주인 API 사용, 바꾸는 요청은 x-meet-admin 헤더 필요', async () => {
+    const { app } = makeApp();
+    const { cookie } = await login(app);
+    expect((await app.request('/api/owner/me', { headers: { cookie } })).status).toBe(200);
+    const body = JSON.stringify({ blocks: [{ start: '2026-12-01T19:00', end: '2026-12-01T22:00', title: '회의' }] });
+    const noHeader = await app.request('/api/owner/busy', { method: 'POST', headers: { cookie, ...jsonHeaders }, body });
+    expect(noHeader.status).toBe(403);
+    const ok = await app.request('/api/owner/busy', { method: 'POST', headers: { cookie, ...jsonHeaders, 'x-meet-admin': '1' }, body });
+    expect(ok.status).toBe(201);
+    const cal = await (await app.request('/api/owner/calendar?month=2026-12', { headers: { cookie } })).json();
+    expect(cal.days.find((d: { date: string }) => d.date === '2026-12-01').busy[0].title).toBe('회의');
+    // 로그아웃 후에도 같은 쿠키를 다시 보내면? 서버는 상태가 없으므로 브라우저에서 지우는 방식. 위조 쿠키는 거절
+    expect((await app.request('/api/owner/me', { headers: { cookie: 'meet_admin=9999999999.deadbeef' } })).status).toBe(401);
+  });
+
+  it('반복 일정 추가와 설정 변경', async () => {
+    const { app } = makeApp();
+    const { cookie } = await login(app);
+    const h = { cookie, ...jsonHeaders, 'x-meet-admin': '1' };
+    const rep = await app.request('/api/owner/busy', {
+      method: 'POST',
+      headers: h,
+      body: JSON.stringify({ repeat: { weekdays: [2], startTime: '19:00', endTime: '22:00', from: '2026-12-01', until: '2026-12-31' }, title: '스터디' }),
+    });
+    expect((await rep.json()).created).toBe(5);
+    const put = await app.request('/api/owner/settings', { method: 'PUT', headers: h, body: JSON.stringify({ bookingUntil: '2026-12-31' }) });
+    expect((await put.json()).bookingUntil).toBe('2026-12-31');
+    expect((await (await app.request('/api/config')).json()).bookableTo).toBe('2026-12-31');
   });
 });

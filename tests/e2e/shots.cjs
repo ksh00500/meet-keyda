@@ -1,4 +1,4 @@
-// 브라우저 점검 (Playwright). 빈 DB + SEED_DEMO=1 로 띄운 서버에 대해: OWNER_KEY=... node tests/e2e/shots.cjs <스크린샷 폴더>
+// 브라우저 점검 (Playwright). 빈 DB + SEED_DEMO=1 로 띄운 서버에 대해: ADMIN_PASSWORD=... node tests/e2e/shots.cjs <스크린샷 폴더>
 // 주의: 클릭할 날짜(11월 24·25·29·30일)는 2026-11-21에 만든 시드 기준이라, 다른 날 실행하면 날짜를 바꿔야 합니다.
 const { chromium, devices } = require('playwright');
 const out = process.argv[2];
@@ -31,10 +31,11 @@ const base = process.env.BASE_URL || 'http://localhost:3100';
   await p.click('text=내 신청 보기');
   await p.waitForSelector('.booking');
   await p.screenshot({ path: `${out}/5-mine.png`, fullPage: true });
-  await p.goto(base + '/owner');
-  await p.fill('input[type=password]', process.env.OWNER_KEY);
+  await p.goto(base + '/admin');
+  await p.fill('input[type=password]', process.env.ADMIN_PASSWORD);
   await p.click('text=들어가기');
-  await p.waitForSelector('.booking');
+  await p.waitForSelector('.aday');
+  await p.click('.tab >> text=신청'); await p.waitForSelector('.booking');
   await p.screenshot({ path: `${out}/6-owner.png`, fullPage: true });
   // 모바일
   const m = await browser.newContext({ ...devices['iPhone 13'] });

@@ -2,13 +2,14 @@ import { useEffect, useState } from 'react';
 import { api, type Config } from './api.js';
 import { CalendarPage } from './components/CalendarPage.js';
 import { MinePage } from './components/MinePage.js';
-import { OwnerPage } from './components/OwnerPage.js';
+import { AdminPage } from './components/AdminPage.js';
 
-export type Route = '/' | '/mine' | '/owner';
+export type Route = '/' | '/mine' | '/admin';
 
 function currentRoute(): Route {
   const p = window.location.pathname.replace(/\/+$/, '') || '/';
-  return p === '/mine' || p === '/owner' ? p : '/';
+  if (p === '/owner' || p === '/admin') return '/admin'; // 예전 주소 /owner 도 관리자 화면으로
+  return p === '/mine' ? p : '/';
 }
 
 export function navigate(to: Route) {
@@ -52,7 +53,7 @@ export function App() {
   }
   if (!config) return <main className="page" aria-busy="true" />;
 
-  if (route === '/owner') return <OwnerPage config={config} />;
+  if (route === '/admin') return <AdminPage config={config} />;
   if (route === '/mine') return <MinePage config={config} />;
   return <CalendarPage config={config} />;
 }

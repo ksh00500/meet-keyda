@@ -42,6 +42,11 @@ CREATE TABLE IF NOT EXISTS booking_tokens (
 );
 CREATE INDEX IF NOT EXISTS idx_tokens_booking ON booking_tokens (booking_id);
 
+CREATE TABLE IF NOT EXISTS settings (
+  key TEXT PRIMARY KEY,
+  value TEXT NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS lookup_locks (
   name_key TEXT PRIMARY KEY,
   fail_count INTEGER NOT NULL DEFAULT 0,

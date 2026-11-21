@@ -1,11 +1,34 @@
 import { ArrowLeft, CheckCircle2, Clock, X } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { blockingKind, slotStatuses } from '../../../server/domain/availability.js';
-import { STEP_MIN, minToTime, slotRange, timeToMin, type SlotKind } from '../../../server/domain/time.js';
+import { SLOTS, STEP_MIN, minToTime, slotRange, timeToMin, type SlotKind } from '../../../server/domain/time.js';
 import { navigate } from '../App.js';
 import { ApiError, api, local, type CalendarDay, type Config, type FriendBooking } from '../api.js';
 import { dateLabel, slotLabel, timeRange } from '../format.js';
 import { Timeline } from './Timeline.js';
+
+/**
+ * 기본 칸 누르기: 이어 붙일 수 있으면 붙이고, 이미 고른 끝 칸이면 빼고, 아니면 그 칸 하나로 바꾼다.
+ */
+function toggleSlot(current: SlotKind | null, id: string): SlotKind | null {
+  const order = SLOTS.map((s) => s.id);
+  const picked = current && current !== 'custom' && current !== 'allday' ? current.split('+') : [];
+  if (picked.length === 0) return id;
+  const idx = picked.map((p) => order.indexOf(p)).sort((a, b) => a - b);
+  const i = order.indexOf(id);
+  const lo = idx[0];
+  const hi = idx[idx.length - 1];
+  let next: number[];
+  if (idx.includes(i)) {
+    if (idx.length === 1) return null;
+    next = i === lo ? idx.slice(1) : i === hi ? idx.slice(0, -1) : [i];
+  } else if (i === lo - 1 || i === hi + 1) {
+    next = [...idx, i].sort((a, b) => a - b);
+  } else {
+    next = [i];
+  }
+  return next.map((n) => order[n]).join('+');
+}
 
 const TIMES = Array.from({ length: (24 * 60) / STEP_MIN + 1 }, (_, i) => minToTime(i * STEP_MIN));
 const REASON = { busy: '불가', booked: '예약됨' } as const;
@@ -46,6 +69,8 @@ export function DayPanel({ config, day, onClose, onBooked }: Props) {
   }, [step]);
 
   const statuses = useMemo(() => slotStatuses(day.date, day.blocks), [day]);
+  // 지금 고른 기본 칸들 (예: 'am+lunch' → ['am','lunch'])
+  const picked = choice && choice !== 'custom' && choice !== 'allday' ? choice.split('+') : [];
 
   const selection = useMemo(() => {
     if (!choice) return null;
@@ -168,21 +193,23 @@ export function DayPanel({ config, day, onClose, onBooked }: Props) {
                 setError(null);
               }}
             />
-            <p className="hint hint--small">막대의 빈 곳이나 빈 시간을 누르면 그 시간부터 1시간이 골라져요. 아래에서 시간대를 골라도 돼요.</p>
+            <p className="hint hint--small">
+              붙어 있는 칸을 이어서 누르면 함께 골라져요 (예: 오전+점심). 막대의 빈 곳을 눌러도 돼요.
+            </p>
 
             {noneAvailable && <p className="hint">기본 시간대는 다 찼어요. 직접 선택으로 빈 시간을 골라 보세요.</p>}
-            <div className="chips" role="radiogroup" aria-label="시간대">
+            <div className="chips chips--four" role="group" aria-label="시간대 (여러 칸 이어서 선택 가능)">
               {config.slots.map((s) => {
                 const st = statuses.find((x) => x.id === s.id)!;
+                const on = picked.includes(s.id);
                 return (
                   <button
                     key={s.id}
-                    role="radio"
-                    aria-checked={choice === s.id}
-                    className={`chip${choice === s.id ? ' chip--on' : ''}`}
+                    aria-pressed={on}
+                    className={`chip${on ? ' chip--on' : ''}`}
                     disabled={!st.available}
                     onClick={() => {
-                      setChoice(s.id);
+                      setChoice(toggleSlot(choice, s.id));
                       setError(null);
                     }}
                   >
@@ -191,12 +218,32 @@ export function DayPanel({ config, day, onClose, onBooked }: Props) {
                   </button>
                 );
               })}
+            </div>
+            <div className="chips chips--extra" role="group" aria-label="다른 선택">
+              {(() => {
+                const st = statuses.find((x) => x.id === 'allday')!;
+                return (
+                  <button
+                    aria-pressed={choice === 'allday'}
+                    className={`chip chip--wide${choice === 'allday' ? ' chip--on' : ''}`}
+                    disabled={!st.available}
+                    onClick={() => {
+                      setChoice(choice === 'allday' ? null : 'allday');
+                      setError(null);
+                    }}
+                  >
+                    <span className="chip__label">{config.allday.label}</span>
+                    <span className="chip__time">
+                      {st.available ? `${config.allday.start}–${config.allday.end}` : REASON[st.reason!]}
+                    </span>
+                  </button>
+                );
+              })()}
               <button
-                role="radio"
-                aria-checked={choice === 'custom'}
-                className={`chip chip--custom${choice === 'custom' ? ' chip--on' : ''}`}
+                aria-pressed={choice === 'custom'}
+                className={`chip chip--wide chip--custom${choice === 'custom' ? ' chip--on' : ''}`}
                 onClick={() => {
-                  setChoice('custom');
+                  setChoice(choice === 'custom' ? null : 'custom');
                   setError(null);
                 }}
               >

@@ -66,6 +66,12 @@
           "saved_at": "2026-11-21T07:48:35+00:00",
           "note": "신청 기간 변경: 1월 24일까지",
           "stage": "build"
+        },
+        {
+          "sha256": "dee3933f1000b2a079ade619073c99e3b759e743af8339811903129bb0bae1a6",
+          "saved_at": "2026-11-21T08:20:59+00:00",
+          "note": "시간 칸 개편, 관리자 화면",
+          "stage": "demo-check"
         }
       ]
     },
@@ -146,6 +152,12 @@
           "saved_at": "2026-11-21T07:48:35+00:00",
           "note": "신청 마감 날짜",
           "stage": "build"
+        },
+        {
+          "sha256": "2d3d71822dc3835d2259119450fc5c5913347cc72ced075967783ead0e27a263",
+          "saved_at": "2026-11-21T08:20:59+00:00",
+          "note": "시간 칸 개편, 관리자 화면",
+          "stage": "demo-check"
         }
       ]
     },
@@ -236,6 +248,11 @@
           "status": "verified",
           "note": "npx vitest run (33개)",
           "at": "2026-11-21T06:16:31+00:00"
+        },
+        {
+          "status": "verified",
+          "note": "npx vitest run (시간 칸 개편 후 다시 실행)",
+          "at": "2026-11-21T08:21:09+00:00"
         }
       ],
       "evidence": [
@@ -252,6 +269,13 @@
           "at": "2026-11-21T06:16:31+00:00",
           "log": "logs/test-all.log",
           "log_sha256": "377d956d31974f367aafb2e5436cd844669ff1488654bbb77e6fe8e495db15a8"
+        },
+        {
+          "command": "npx vitest run (시간 칸 개편 후 다시 실행)",
+          "exit_code": 0,
+          "at": "2026-11-21T08:21:09+00:00",
+          "log": "logs/test-all.log",
+          "log_sha256": "2ed11aab891a51115175cbd2e0abd11cc16e1f638d124cd495047cc0d9443fd5"
         }
       ]
     },
@@ -269,6 +293,11 @@
           "status": "verified",
           "note": "node shots.cjs (Playwright: 캘린더→날짜→직접 선택 겹침→신청→내 신청→주인 화면, 데스크톱·아이폰13)",
           "at": "2026-11-21T06:16:31+00:00"
+        },
+        {
+          "status": "verified",
+          "note": "node tests/e2e/shots.cjs (시간 칸 개편 후 다시 실행)",
+          "at": "2026-11-21T08:21:09+00:00"
         }
       ],
       "evidence": [
@@ -278,6 +307,13 @@
           "at": "2026-11-21T06:16:31+00:00",
           "log": "logs/e2e-walkthrough.log",
           "log_sha256": "59e6b7d8e649037e5a87800127ff5dadde28eb03692c496b819997143bb027b1"
+        },
+        {
+          "command": "node tests/e2e/shots.cjs (시간 칸 개편 후 다시 실행)",
+          "exit_code": 0,
+          "at": "2026-11-21T08:21:09+00:00",
+          "log": "logs/e2e-walkthrough.log",
+          "log_sha256": "aa15d5fd6c72fc88b4ab16397ca8d8e3dfe5deede3cc6fb6368ff428eb8016ba"
         }
       ]
     },
@@ -295,6 +331,11 @@
           "status": "verified",
           "note": "node shots.cjs (Playwright: 캘린더→날짜→직접 선택 겹침→신청→내 신청→주인 화면, 데스크톱·아이폰13)",
           "at": "2026-11-21T06:16:31+00:00"
+        },
+        {
+          "status": "verified",
+          "note": "node tests/e2e/shots.cjs (시간 칸 개편 후 다시 실행)",
+          "at": "2026-11-21T08:21:09+00:00"
         }
       ],
       "evidence": [
@@ -304,6 +345,13 @@
           "at": "2026-11-21T06:16:31+00:00",
           "log": "logs/e2e-walkthrough.log",
           "log_sha256": "59e6b7d8e649037e5a87800127ff5dadde28eb03692c496b819997143bb027b1"
+        },
+        {
+          "command": "node tests/e2e/shots.cjs (시간 칸 개편 후 다시 실행)",
+          "exit_code": 0,
+          "at": "2026-11-21T08:21:09+00:00",
+          "log": "logs/e2e-walkthrough.log",
+          "log_sha256": "aa15d5fd6c72fc88b4ab16397ca8d8e3dfe5deede3cc6fb6368ff428eb8016ba"
         }
       ]
     },
@@ -321,6 +369,11 @@
           "status": "verified",
           "note": "node shots.cjs (Playwright: 캘린더→날짜→직접 선택 겹침→신청→내 신청→주인 화면, 데스크톱·아이폰13)",
           "at": "2026-11-21T06:16:31+00:00"
+        },
+        {
+          "status": "verified",
+          "note": "node tests/e2e/shots.cjs (시간 칸 개편 후 다시 실행)",
+          "at": "2026-11-21T08:21:09+00:00"
         }
       ],
       "evidence": [
@@ -330,6 +383,13 @@
           "at": "2026-11-21T06:16:31+00:00",
           "log": "logs/e2e-walkthrough.log",
           "log_sha256": "59e6b7d8e649037e5a87800127ff5dadde28eb03692c496b819997143bb027b1"
+        },
+        {
+          "command": "node tests/e2e/shots.cjs (시간 칸 개편 후 다시 실행)",
+          "exit_code": 0,
+          "at": "2026-11-21T08:21:09+00:00",
+          "log": "logs/e2e-walkthrough.log",
+          "log_sha256": "aa15d5fd6c72fc88b4ab16397ca8d8e3dfe5deede3cc6fb6368ff428eb8016ba"
         }
       ]
     },
@@ -404,6 +464,11 @@
           "status": "verified",
           "note": "npx vitest run (33개)",
           "at": "2026-11-21T06:16:31+00:00"
+        },
+        {
+          "status": "verified",
+          "note": "npx vitest run (시간 칸 개편 후 다시 실행)",
+          "at": "2026-11-21T08:21:09+00:00"
         }
       ],
       "evidence": [
@@ -420,6 +485,13 @@
           "at": "2026-11-21T06:16:31+00:00",
           "log": "logs/test-all.log",
           "log_sha256": "377d956d31974f367aafb2e5436cd844669ff1488654bbb77e6fe8e495db15a8"
+        },
+        {
+          "command": "npx vitest run (시간 칸 개편 후 다시 실행)",
+          "exit_code": 0,
+          "at": "2026-11-21T08:21:09+00:00",
+          "log": "logs/test-all.log",
+          "log_sha256": "2ed11aab891a51115175cbd2e0abd11cc16e1f638d124cd495047cc0d9443fd5"
         }
       ]
     },
@@ -442,6 +514,11 @@
           "status": "verified",
           "note": "npx vitest run (33개)",
           "at": "2026-11-21T06:16:31+00:00"
+        },
+        {
+          "status": "verified",
+          "note": "npx vitest run (시간 칸 개편 후 다시 실행)",
+          "at": "2026-11-21T08:21:09+00:00"
         }
       ],
       "evidence": [
@@ -458,6 +535,13 @@
           "at": "2026-11-21T06:16:31+00:00",
           "log": "logs/test-all.log",
           "log_sha256": "377d956d31974f367aafb2e5436cd844669ff1488654bbb77e6fe8e495db15a8"
+        },
+        {
+          "command": "npx vitest run (시간 칸 개편 후 다시 실행)",
+          "exit_code": 0,
+          "at": "2026-11-21T08:21:09+00:00",
+          "log": "logs/test-all.log",
+          "log_sha256": "2ed11aab891a51115175cbd2e0abd11cc16e1f638d124cd495047cc0d9443fd5"
         }
       ]
     },
@@ -518,6 +602,11 @@
           "status": "verified",
           "note": "node tests/e2e/timeline.cjs (아이폰13)",
           "at": "2026-11-21T06:53:33+00:00"
+        },
+        {
+          "status": "verified",
+          "note": "node tests/e2e/timeline.cjs (시간 칸 개편 후 다시 실행)",
+          "at": "2026-11-21T08:21:09+00:00"
         }
       ],
       "evidence": [
@@ -527,6 +616,13 @@
           "at": "2026-11-21T06:53:33+00:00",
           "log": "logs/e2e-timeline.log",
           "log_sha256": "6fb2e6d6d6c2c099d932cd1ee04ff59eb3be851690ed6ade1abaed013558a6a5"
+        },
+        {
+          "command": "node tests/e2e/timeline.cjs (시간 칸 개편 후 다시 실행)",
+          "exit_code": 0,
+          "at": "2026-11-21T08:21:09+00:00",
+          "log": "logs/e2e-timeline.log",
+          "log_sha256": "4660a2ef88cef9ffbef546fd17d70bc411fa85349a4c75a7212575d97c265bf8"
         }
       ]
     },
@@ -544,6 +640,11 @@
           "status": "verified",
           "note": "npx vitest run && node tests/e2e/shots.cjs && node tests/e2e/flow2.cjs",
           "at": "2026-11-21T07:33:13+00:00"
+        },
+        {
+          "status": "verified",
+          "note": "node tests/e2e/shots.cjs (시간 칸 개편 후 다시 실행)",
+          "at": "2026-11-21T08:21:09+00:00"
         }
       ],
       "evidence": [
@@ -553,6 +654,13 @@
           "at": "2026-11-21T07:33:13+00:00",
           "log": "logs/e2e-walkthrough.log",
           "log_sha256": "59e6b7d8e649037e5a87800127ff5dadde28eb03692c496b819997143bb027b1"
+        },
+        {
+          "command": "node tests/e2e/shots.cjs (시간 칸 개편 후 다시 실행)",
+          "exit_code": 0,
+          "at": "2026-11-21T08:21:09+00:00",
+          "log": "logs/e2e-walkthrough.log",
+          "log_sha256": "aa15d5fd6c72fc88b4ab16397ca8d8e3dfe5deede3cc6fb6368ff428eb8016ba"
         }
       ]
     },
@@ -570,6 +678,11 @@
           "status": "verified",
           "note": "node tests/e2e/weekview.cjs (+ shots, flow2, timeline, vitest)",
           "at": "2026-11-21T07:37:45+00:00"
+        },
+        {
+          "status": "verified",
+          "note": "node tests/e2e/weekview.cjs (시간 칸 개편 후 다시 실행)",
+          "at": "2026-11-21T08:21:09+00:00"
         }
       ],
       "evidence": [
@@ -579,6 +692,13 @@
           "at": "2026-11-21T07:37:45+00:00",
           "log": "logs/e2e-weekview.log",
           "log_sha256": "007b5c6dc75db33536ae4562b3d56c64745aed49e462ef68510fd90a7df75203"
+        },
+        {
+          "command": "node tests/e2e/weekview.cjs (시간 칸 개편 후 다시 실행)",
+          "exit_code": 0,
+          "at": "2026-11-21T08:21:09+00:00",
+          "log": "logs/e2e-weekview.log",
+          "log_sha256": "7bca8e97340c7bbb109e1ea5135ed8922b4969a2b142587bd5fb3e870df72eb4"
         }
       ]
     },
@@ -596,6 +716,11 @@
           "status": "verified",
           "note": "node tests/e2e/december.cjs (+ shots, flow2, weekview, timeline, vitest)",
           "at": "2026-11-21T07:42:06+00:00"
+        },
+        {
+          "status": "verified",
+          "note": "node tests/e2e/december.cjs (시간 칸 개편 후 다시 실행)",
+          "at": "2026-11-21T08:21:09+00:00"
         }
       ],
       "evidence": [
@@ -605,6 +730,13 @@
           "at": "2026-11-21T07:42:06+00:00",
           "log": "logs/e2e-december.log",
           "log_sha256": "755879322b3e0f522d3ef291389d2e304472766ce42f232fc4f249ecfbe8f1b6"
+        },
+        {
+          "command": "node tests/e2e/december.cjs (시간 칸 개편 후 다시 실행)",
+          "exit_code": 0,
+          "at": "2026-11-21T08:21:09+00:00",
+          "log": "logs/e2e-december.log",
+          "log_sha256": "e0eed5892db6277de33868f100c526f8823cd045f3a295e5dbdc85899995898c"
         }
       ]
     },
@@ -648,6 +780,11 @@
           "status": "verified",
           "note": "npx vitest run && node tests/e2e/until.cjs (+ 다른 점검 5개)",
           "at": "2026-11-21T07:48:35+00:00"
+        },
+        {
+          "status": "verified",
+          "note": "node tests/e2e/until.cjs (시간 칸 개편 후 다시 실행)",
+          "at": "2026-11-21T08:21:10+00:00"
         }
       ],
       "evidence": [
@@ -657,6 +794,65 @@
           "at": "2026-11-21T07:48:35+00:00",
           "log": "logs/e2e-until.log",
           "log_sha256": "477b3cba6aecdf2141265d2725e80978cdf5b3760755d6641723696e52aad03a"
+        },
+        {
+          "command": "node tests/e2e/until.cjs (시간 칸 개편 후 다시 실행)",
+          "exit_code": 0,
+          "at": "2026-11-21T08:21:10+00:00",
+          "log": "logs/e2e-until.log",
+          "log_sha256": "4f1a93a738ab3d1175b3c8e9fe801f5f9376aa5e3efebfa3c124b3382c2304d0"
+        }
+      ]
+    },
+    {
+      "id": "T18",
+      "title": "T18 시간 칸 개편 (겹치지 않는 4칸 + 이어 고르기)",
+      "must": true,
+      "status": "verified",
+      "history": [
+        {
+          "status": "todo",
+          "at": "2026-11-21T08:20:59+00:00"
+        },
+        {
+          "status": "verified",
+          "note": "npx vitest run (40) && node tests/e2e/admin.cjs",
+          "at": "2026-11-21T08:20:59+00:00"
+        }
+      ],
+      "evidence": [
+        {
+          "command": "npx vitest run (40) && node tests/e2e/admin.cjs",
+          "exit_code": 0,
+          "at": "2026-11-21T08:20:59+00:00",
+          "log": "logs/test-all.log",
+          "log_sha256": "2ed11aab891a51115175cbd2e0abd11cc16e1f638d124cd495047cc0d9443fd5"
+        }
+      ]
+    },
+    {
+      "id": "T19",
+      "title": "T19 관리자 화면 (/admin, ADMIN_PASSWORD, 캘린더·일정 추가·신청·설정)",
+      "must": true,
+      "status": "verified",
+      "history": [
+        {
+          "status": "todo",
+          "at": "2026-11-21T08:20:59+00:00"
+        },
+        {
+          "status": "verified",
+          "note": "node tests/e2e/admin.cjs (+ shots, flow2, weekview, timeline, until, december)",
+          "at": "2026-11-21T08:20:59+00:00"
+        }
+      ],
+      "evidence": [
+        {
+          "command": "node tests/e2e/admin.cjs (+ shots, flow2, weekview, timeline, until, december)",
+          "exit_code": 0,
+          "at": "2026-11-21T08:20:59+00:00",
+          "log": "logs/e2e-admin.log",
+          "log_sha256": "b72ea0f18a10972df8b9741211694909a75796238b9ec683787e1d2e76c8cfb2"
         }
       ]
     }
@@ -693,5 +889,5 @@
       "at": "2026-11-21T06:00:36+00:00"
     }
   ],
-  "updated_at": "2026-11-21T08:06:01+00:00"
+  "updated_at": "2026-11-21T08:21:10+00:00"
 }

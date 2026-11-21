@@ -1,4 +1,4 @@
-import { SLOT_LABEL, type SlotKind, weekday } from '../../server/domain/time.js';
+import { slotLabel as slotLabelOf, type SlotKind, weekday } from '../../server/domain/time.js';
 import type { BookingStatus } from './api.js';
 
 const WEEK = ['일', '월', '화', '수', '목', '금', '토'];
@@ -49,7 +49,7 @@ export function whenParts(start: string, end: string): { date: string; time: str
   return { date: dateLabel(start.slice(0, 10)), time: t };
 }
 
-export const slotLabel = (slot: SlotKind) => SLOT_LABEL[slot] ?? slot;
+export const slotLabel = (slot: SlotKind) => slotLabelOf(slot);
 
 export const STATUS_LABEL: Record<BookingStatus, string> = {
   pending: '신청 중',

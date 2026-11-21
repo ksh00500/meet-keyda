@@ -10,6 +10,7 @@ import {
   isMonth,
   isStamp,
   monthDays,
+  joinSlots,
   nowKst,
   slotRange,
   type SlotKind,
@@ -134,7 +135,8 @@ const toBusy = (r: BusyRow): Busy => ({
 
 export interface CreateBookingInput {
   date: unknown;
-  slot: unknown;
+  slot?: unknown;
+  slots?: unknown;
   start?: unknown;
   end?: unknown;
   name: unknown;
@@ -152,13 +154,66 @@ export class Store {
   constructor(
     readonly db: DB,
     private readonly clock: () => Date = () => new Date(),
-    /** 이 날짜(YYYY-MM-DD)까지만 신청을 받음. 없으면 90일 */
-    readonly bookingUntil: string | null = null,
+    /** 기본값(.env): 이 날짜(YYYY-MM-DD)까지만 신청을 받음. 없으면 90일. 관리자 설정이 있으면 그쪽이 우선 */
+    readonly envBookingUntil: string | null = null,
+    /** 기본값(.env): 화면 제목 */
+    readonly envSiteTitle: string = '시호와 약속 잡기',
   ) {}
+
+  // ---------- 설정 (관리자 화면에서 바꿀 수 있음, 없으면 .env 값) ----------
+
+  private getSetting(key: string): string | null {
+    const row = this.db.prepare<[string], { value: string }>('SELECT value FROM settings WHERE key = ?').get(key);
+    return row ? row.value : null;
+  }
+
+  settings(): { siteTitle: string; bookingUntil: string | null; source: { siteTitle: 'env' | 'admin'; bookingUntil: 'env' | 'admin' } } {
+    const t = this.getSetting('site_title');
+    const u = this.getSetting('booking_until');
+    return {
+      siteTitle: t ?? this.envSiteTitle,
+      // 빈 문자열 = 관리자가 "마감 없음(90일)"으로 정함
+      bookingUntil: u === null ? this.envBookingUntil : u || null,
+      source: { siteTitle: t === null ? 'env' : 'admin', bookingUntil: u === null ? 'env' : 'admin' },
+    };
+  }
+
+  updateSettings(input: { siteTitle?: unknown; bookingUntil?: unknown }): { ok: true } | Fail {
+    const set = this.db.prepare(
+      'INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value',
+    );
+    if (input.siteTitle !== undefined) {
+      const t = cleanText(input.siteTitle, 40);
+      if (!t) return { ok: false, error: 'bad_title', message: '제목을 적어 주세요' };
+      set.run('site_title', t);
+    }
+    if (input.bookingUntil !== undefined) {
+      const u = input.bookingUntil === null || input.bookingUntil === '' ? '' : String(input.bookingUntil);
+      if (u && !isDate(u)) return { ok: false, error: 'bad_date', message: '날짜는 YYYY-MM-DD 형식이어야 해요' };
+      set.run('booking_until', u);
+    }
+    return { ok: true };
+  }
 
   /** 친구가 신청할 수 있는 날짜 범위 */
   bookable(): { from: string; to: string } {
-    return bookableRange(this.clock(), this.bookingUntil);
+    return bookableRange(this.clock(), this.settings().bookingUntil);
+  }
+
+  /** 관리자 캘린더: 한 달의 내 일정(제목 포함)과 신청(이름·메모 포함)을 날짜별로 */
+  ownerMonth(month: string): { ok: true; days: { date: string; busy: Busy[]; bookings: OwnerBooking[] }[] } | Fail {
+    if (!isMonth(month)) return { ok: false, error: 'bad_month', message: '월 형식이 맞지 않아요 (YYYY-MM)' };
+    const days = monthDays(month);
+    const r = this.schedule(days[0], days[days.length - 1], false);
+    if (!r.ok) return r;
+    return {
+      ok: true,
+      days: days.map((date) => ({
+        date,
+        busy: r.busy.filter((b) => clipToDay(b, date)),
+        bookings: r.bookings.filter((b) => clipToDay(b, date)),
+      })),
+    };
   }
 
   private nowIso(): string {
@@ -232,10 +287,25 @@ export class Store {
     }
     const memo = typeof input.memo === 'string' ? input.memo.trim() : '';
     if ([...memo].length > MEMO_MAX) return { ok: false, error: 'bad_memo', message: `메모는 ${MEMO_MAX}자까지예요` };
-    if (typeof input.slot !== 'string') return { ok: false, error: 'bad_slot', message: '시간대를 골라 주세요' };
+    // 시간대: slot 하나('lunch', 'allday', 'custom') 또는 이어 붙인 칸 목록 slots(['am','lunch'])
+    let kind: string;
+    if (Array.isArray(input.slots) && input.slots.length > 0) {
+      const j = joinSlots(input.slots.map(String));
+      if (!j.ok) return { ok: false, error: 'bad_slot', message: j.message };
+      kind = j.kind;
+    } else if (typeof input.slot === 'string') {
+      kind = input.slot;
+      if (kind !== 'custom' && kind !== 'allday') {
+        const j = joinSlots(kind.split('+'));
+        if (!j.ok) return { ok: false, error: 'bad_slot', message: j.message };
+        kind = j.kind;
+      }
+    } else {
+      return { ok: false, error: 'bad_slot', message: '시간대를 골라 주세요' };
+    }
     const r = slotRange(
       String(input.date),
-      input.slot as SlotKind,
+      kind as SlotKind,
       typeof input.start === 'string' ? input.start : undefined,
       typeof input.end === 'string' ? input.end : undefined,
     );
@@ -264,7 +334,7 @@ export class Store {
           `INSERT INTO bookings (id, start_at, end_at, slot, name, name_key, pin_hash, memo, status, created_at)
            VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?)`,
         )
-        .run(id, start, end, input.slot, name, nameKey(name), pinHash, memo, now);
+        .run(id, start, end, kind, name, nameKey(name), pinHash, memo, now);
       this.db
         .prepare('INSERT INTO booking_tokens (token_hash, booking_id, created_at) VALUES (?, ?, ?)')
         .run(sha256(token), id, now);

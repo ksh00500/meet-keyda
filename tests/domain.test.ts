@@ -21,7 +21,12 @@ describe('시간 규칙', () => {
   });
 
   it('시간대와 직접 선택을 구간으로 바꿈', () => {
-    expect(slotRange('2026-12-01', 'lunch')).toEqual({ ok: true, range: { start: '2026-12-01T11:30', end: '2026-12-01T14:00' } });
+    expect(slotRange('2026-12-01', 'lunch')).toEqual({ ok: true, range: { start: '2026-12-01T12:00', end: '2026-12-01T14:00' } });
+    // 이어 붙인 칸 = 반일
+    expect(slotRange('2026-12-01', 'am+lunch')).toEqual({ ok: true, range: { start: '2026-12-01T09:00', end: '2026-12-01T14:00' } });
+    expect(slotRange('2026-12-01', 'allday')).toEqual({ ok: true, range: { start: '2026-12-01T09:00', end: '2026-12-01T22:00' } });
+    // 떨어진 칸은 함께 못 고름
+    expect(slotRange('2026-12-01', 'am+pm').ok).toBe(false);
     expect(slotRange('2026-12-01', 'custom', '22:00', '24:00')).toEqual({
       ok: true,
       range: { start: '2026-12-01T22:00', end: '2026-12-02T00:00' },
@@ -40,10 +45,10 @@ describe('시간 규칙', () => {
 });
 
 describe('가능 여부', () => {
-  it('저녁만 막힌 날은 저녁·종일만 비활성, 상태는 일부 가능', () => {
-    const blocks = [{ start: '2026-12-01T19:00', end: '2026-12-01T22:00', kind: 'busy' as const }];
+  it('점심만 예약되면 점심·종일만 막히고 나머지 칸은 그대로', () => {
+    const blocks = [{ start: '2026-12-01T12:00', end: '2026-12-01T14:00', kind: 'booked' as const }];
     const s = Object.fromEntries(slotStatuses('2026-12-01', blocks).map((x) => [x.id, x.available]));
-    expect(s).toEqual({ lunch: true, dinner: false, am: true, pm: true, allday: false });
+    expect(s).toEqual({ am: true, lunch: false, pm: true, dinner: true, allday: false });
     expect(dayState('2026-12-01', blocks, true)).toBe('partial');
   });
 
@@ -56,12 +61,12 @@ describe('가능 여부', () => {
 
   it('기본 시간대가 모두 막혀도 빈 30분이 있으면 partial (직접 선택 가능)', () => {
     const blocks = [
-      { start: '2026-12-01T11:30', end: '2026-12-01T14:00', kind: 'booked' as const },
-      { start: '2026-12-01T19:00', end: '2026-12-01T22:00', kind: 'busy' as const },
+      { start: '2026-12-01T09:30', end: '2026-12-01T12:30', kind: 'booked' as const },
+      { start: '2026-12-01T13:30', end: '2026-12-01T22:00', kind: 'busy' as const },
     ];
     expect(slotStatuses('2026-12-01', blocks).every((x) => !x.available)).toBe(true);
     expect(dayState('2026-12-01', blocks, true)).toBe('partial');
-    const filled = [...blocks, { start: '2026-12-01T09:00', end: '2026-12-01T11:30', kind: 'busy' as const }, { start: '2026-12-01T14:00', end: '2026-12-01T19:00', kind: 'busy' as const }];
+    const filled = [{ start: '2026-12-01T09:00', end: '2026-12-01T22:00', kind: 'busy' as const }];
     expect(dayState('2026-12-01', filled, true)).toBe('full');
   });
 
@@ -92,26 +97,24 @@ describe('반복 일정', () => {
   });
 });
 
-describe('캘린더 칸 세 구간', async () => {
+describe('캘린더 칸 네 구간', async () => {
   const { periodStates, daySummary } = await import('../server/domain/availability.js');
-  it('저녁 불가, 점심 예약이면 오전 some · 오후 some · 저녁 busy', () => {
+  it('점심 예약 + 저녁 일부 불가', () => {
     const blocks = [
-      { start: '2026-12-01T11:30', end: '2026-12-01T14:00', kind: 'booked' as const },
+      { start: '2026-12-01T12:00', end: '2026-12-01T14:00', kind: 'booked' as const },
       { start: '2026-12-01T19:00', end: '2026-12-01T22:00', kind: 'busy' as const },
     ];
-    const s = periodStates('2026-12-01', blocks);
-    expect(s).toEqual(['some', 'some', 'some']);
-    expect(daySummary(s)).toBe('일부 시간 가능');
-    const s2 = periodStates('2026-12-01', [{ start: '2026-12-01T18:00', end: '2026-12-01T22:00', kind: 'busy' as const }]);
-    expect(s2).toEqual(['free', 'free', 'busy']);
-    expect(daySummary(s2)).toBe('오전·오후 가능');
+    expect(periodStates('2026-12-01', blocks)).toEqual(['free', 'booked', 'free', 'some']);
+    expect(daySummary(periodStates('2026-12-01', blocks))).toBe('일부 시간 가능');
+    const lunchOnly = periodStates('2026-12-01', [blocks[0]]);
+    expect(daySummary(lunchOnly)).toBe('점심 빼고 가능');
     expect(daySummary(periodStates('2026-12-01', []))).toBe('종일 가능');
-    // 오전·오후 불가, 저녁은 18–19시만 빔
+    const eveOff = periodStates('2026-12-01', [{ start: '2026-12-01T14:00', end: '2026-12-01T22:00', kind: 'busy' as const }]);
+    expect(daySummary(eveOff)).toBe('오전·점심 가능');
     const s3 = periodStates('2026-12-01', [
       { start: '2026-12-01T09:00', end: '2026-12-01T18:00', kind: 'busy' as const },
       { start: '2026-12-01T19:00', end: '2026-12-01T22:00', kind: 'busy' as const },
     ]);
-    expect(s3).toEqual(['busy', 'busy', 'some']);
     expect(daySummary(s3)).toBe('저녁 일부 가능');
   });
 });

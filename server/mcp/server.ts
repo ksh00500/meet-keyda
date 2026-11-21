@@ -5,7 +5,7 @@ import type { Store } from '../store.js';
 
 const TIME_NOTE =
   '시간은 모두 한국 시간(Asia/Seoul) 문자열 "YYYY-MM-DDTHH:MM"입니다. 구간은 시작 포함·끝 제외이며, 하루 끝(24:00)은 다음 날 "T00:00"으로 씁니다.';
-const SLOT_NOTE = `친구가 고르는 기본 시간대: ${SLOTS.map((s) => `${s.label} ${s.start}-${s.end}`).join(', ')}. 친구는 30분 단위로 직접 시간을 고를 수도 있습니다.`;
+const SLOT_NOTE = `친구가 고르는 기본 칸(서로 겹치지 않음): ${SLOTS.map((s) => `${s.label} ${s.start}-${s.end}`).join(', ')}. 붙어 있는 칸을 이어서 고를 수 있고(예: slot "am+lunch" = 오전+점심 09:00-14:00), "allday"는 종일 09:00-22:00, "custom"은 30분 단위로 직접 고른 시간입니다.`;
 
 const stampSchema = z
   .string()

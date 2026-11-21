@@ -6,32 +6,54 @@ export const KST_OFFSET_MIN = 9 * 60;
 export const BOOKABLE_DAYS = 90;
 export const STEP_MIN = 30;
 
-export type SlotId = 'lunch' | 'dinner' | 'am' | 'pm' | 'allday';
-export type SlotKind = SlotId | 'custom';
+/** 서로 겹치지 않는 기본 칸. 붙어 있는 칸을 여러 개 고르면 반일처럼 쓸 수 있다 */
+export type SlotId = 'am' | 'lunch' | 'pm' | 'dinner';
+/**
+ * 신청에 저장되는 시간 종류: 기본 칸 하나('lunch'), 이어 붙인 칸('am+lunch'), 'allday', 'custom'.
+ * 예전 정의로 저장된 값('am' 9–13 등)도 이름표는 그대로 읽힌다.
+ */
+export type SlotKind = string;
 
 export interface SlotDef {
-  id: SlotId;
+  id: string;
   label: string;
   start: string; // HH:MM
   end: string; // HH:MM
 }
 
 export const SLOTS: SlotDef[] = [
-  { id: 'lunch', label: '점심', start: '11:30', end: '14:00' },
+  { id: 'am', label: '오전', start: '09:00', end: '12:00' },
+  { id: 'lunch', label: '점심', start: '12:00', end: '14:00' },
+  { id: 'pm', label: '오후', start: '14:00', end: '18:00' },
   { id: 'dinner', label: '저녁', start: '18:00', end: '22:00' },
-  { id: 'am', label: '오전 반일', start: '09:00', end: '13:00' },
-  { id: 'pm', label: '오후 반일', start: '13:00', end: '18:00' },
-  { id: 'allday', label: '종일', start: '09:00', end: '22:00' },
 ];
 
-export const SLOT_LABEL: Record<SlotKind, string> = {
-  lunch: '점심',
-  dinner: '저녁',
-  am: '오전 반일',
-  pm: '오후 반일',
-  allday: '종일',
-  custom: '직접 선택',
-};
+export const ALLDAY: SlotDef = { id: 'allday', label: '종일', start: '09:00', end: '22:00' };
+
+const BASE_LABEL: Record<string, string> = { am: '오전', lunch: '점심', pm: '오후', dinner: '저녁', allday: '종일', custom: '직접 선택' };
+
+export function slotLabel(kind: SlotKind): string {
+  return kind
+    .split('+')
+    .map((k) => BASE_LABEL[k] ?? k)
+    .join('+');
+}
+
+/** 기본 칸 id 목록 → 이어 붙인 한 구간. 칸이 떨어져 있으면 거절 */
+export function joinSlots(ids: string[]): { ok: true; kind: string; start: string; end: string } | { ok: false; message: string } {
+  const idx = [...new Set(ids)].map((id) => SLOTS.findIndex((s) => s.id === id));
+  if (idx.length === 0 || idx.some((i) => i < 0)) return { ok: false, message: '없는 시간대예요' };
+  idx.sort((a, b) => a - b);
+  for (let i = 1; i < idx.length; i++) {
+    if (idx[i] !== idx[i - 1] + 1) return { ok: false, message: '붙어 있는 시간대만 함께 고를 수 있어요' };
+  }
+  return {
+    ok: true,
+    kind: idx.map((i) => SLOTS[i].id).join('+'),
+    start: SLOTS[idx[0]].start,
+    end: SLOTS[idx[idx.length - 1]].end,
+  };
+}
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 const TIME_RE = /^([01]\d|2[0-4]):([0-5]\d)$/;
@@ -112,13 +134,14 @@ export interface Range {
 
 export type RangeResult = { ok: true; range: Range } | { ok: false; error: string; message: string };
 
-/** 시간대 또는 직접 선택 시간을 실제 구간으로 바꾼다. */
+/** 시간대(기본 칸·이어 붙인 칸·종일) 또는 직접 선택 시간을 실제 구간으로 바꾼다. */
 export function slotRange(date: string, slot: SlotKind, start?: string, end?: string): RangeResult {
   if (!isDate(date)) return { ok: false, error: 'bad_date', message: '날짜 형식이 맞지 않아요' };
+  if (slot === 'allday') return { ok: true, range: { start: stamp(date, ALLDAY.start), end: stamp(date, ALLDAY.end) } };
   if (slot !== 'custom') {
-    const def = SLOTS.find((s) => s.id === slot);
-    if (!def) return { ok: false, error: 'bad_slot', message: '없는 시간대예요' };
-    return { ok: true, range: { start: stamp(date, def.start), end: stamp(date, def.end) } };
+    const j = joinSlots(String(slot).split('+'));
+    if (!j.ok) return { ok: false, error: 'bad_slot', message: j.message };
+    return { ok: true, range: { start: stamp(date, j.start), end: stamp(date, j.end) } };
   }
   if (!isTime(start) || !isTime(end)) {
     return { ok: false, error: 'bad_time', message: '시작과 끝 시간을 골라 주세요' };

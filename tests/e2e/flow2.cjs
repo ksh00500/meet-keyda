@@ -1,4 +1,4 @@
-// 브라우저 점검 (Playwright). shots.cjs 다음에 실행: OWNER_KEY=... node tests/e2e/flow2.cjs
+// 브라우저 점검 (Playwright). shots.cjs 다음에 실행: ADMIN_PASSWORD=... node tests/e2e/flow2.cjs
 // 주의: 클릭할 날짜(11월 24·25·29·30일)는 2026-11-21에 만든 시드 기준이라, 다른 날 실행하면 날짜를 바꿔야 합니다.
 const { chromium } = require('playwright');
 const base = process.env.BASE_URL || 'http://localhost:3100';
@@ -18,9 +18,10 @@ const base = process.env.BASE_URL || 'http://localhost:3100';
   // 주인이 수락
   const o = await (await b.newContext()).newPage();
   o.on('dialog', (d) => d.accept());
-  await o.goto(base + '/owner');
-  await o.fill('input[type=password]', process.env.OWNER_KEY);
-  await o.click('text=들어가기'); await o.waitForSelector('.booking');
+  await o.goto(base + '/admin');
+  await o.fill('input[type=password]', process.env.ADMIN_PASSWORD);
+  await o.click('text=들어가기'); await o.waitForSelector('.aday');
+  await o.click('.tab >> text=신청'); await o.waitForSelector('.booking');
   await o.locator('.booking', { hasText: '정다은' }).locator('text=수락').click();
   await o.waitForTimeout(500);
   // 다른 기기에서 이름 + PIN으로 찾기 → 확정 보임

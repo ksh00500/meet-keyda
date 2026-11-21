@@ -1,15 +1,45 @@
-import { createHash, timingSafeEqual } from 'node:crypto';
+import { createHash, createHmac, timingSafeEqual } from 'node:crypto';
+import { getCookie, setCookie, deleteCookie } from 'hono/cookie';
 import { Hono, type Context, type MiddlewareHandler } from 'hono';
 import { WebStandardStreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js';
-import { SLOTS, nowKst } from './domain/time.js';
+import { ALLDAY, SLOTS, nowKst } from './domain/time.js';
 import { createMcpServer } from './mcp/server.js';
 import type { BookingStatus, Fail, Store } from './store.js';
 
 export interface AppOptions {
   store: Store;
   ownerKey: string;
-  siteTitle: string;
+  /** 관리자 화면 비밀번호 (.env ADMIN_PASSWORD). 비어 있으면 관리자 로그인을 막는다 */
+  adminPassword?: string;
   clock?: () => Date;
+}
+
+const ADMIN_COOKIE = 'meet_admin';
+const ADMIN_SESSION_SEC = 30 * 24 * 60 * 60;
+
+/** 관리자 로그인 쿠키: "만료시각.서명". 비밀번호나 OWNER_KEY가 바뀌면 기존 쿠키는 모두 무효 */
+function sessionSecret(adminPassword: string, ownerKey: string): Buffer {
+  return createHash('sha256').update(`meet-admin\n${adminPassword}\n${ownerKey}`).digest();
+}
+function signSession(secret: Buffer, exp: number): string {
+  return `${exp}.${createHmac('sha256', secret).update(`admin:${exp}`).digest('hex')}`;
+}
+function sessionValid(secret: Buffer, value: string | undefined, nowSec: number): boolean {
+  if (!value) return false;
+  const [expStr, sig] = value.split('.');
+  const exp = Number(expStr);
+  if (!Number.isInteger(exp) || exp < nowSec || !sig) return false;
+  const expected = signSession(secret, exp).split('.')[1];
+  const a = Buffer.from(sig, 'hex');
+  const b = Buffer.from(expected, 'hex');
+  return a.length === b.length && timingSafeEqual(a, b);
+}
+function isHttps(c: Context): boolean {
+  return (
+    c.req.header('x-forwarded-proto') === 'https' ||
+    (c.req.header('cf-visitor') ?? '').includes('https') ||
+    new URL(c.req.url).protocol === 'https:'
+  );
 }
 
 const STATUSES = ['pending', 'confirmed', 'rejected', 'cancelled', 'all'] as const;
@@ -59,7 +89,10 @@ function rateLimit(limit: number, windowMs: number): MiddlewareHandler {
   };
 }
 
-export function createApp({ store, ownerKey, siteTitle, clock = () => new Date() }: AppOptions) {
+export function createApp({ store, ownerKey, adminPassword = '', clock = () => new Date() }: AppOptions) {
+  const secret = sessionSecret(adminPassword, ownerKey);
+  const nowSec = () => Math.floor(clock().getTime() / 1000);
+  const isAdmin = (c: Context) => !!adminPassword && sessionValid(secret, getCookie(c, ADMIN_COOKIE), nowSec());
   const app = new Hono();
 
   app.use('*', async (c, next) => {
@@ -69,8 +102,15 @@ export function createApp({ store, ownerKey, siteTitle, clock = () => new Date()
     c.header('X-Frame-Options', 'DENY');
   });
 
+  // 주인 확인: AI(MCP)·스크립트는 Bearer OWNER_KEY, 관리자 화면은 로그인 쿠키
   const ownerOnly: MiddlewareHandler = async (c, next) => {
-    if (!ownerKey || !keyMatches(bearer(c), ownerKey)) {
+    const byKey = !!ownerKey && keyMatches(bearer(c), ownerKey);
+    const byCookie = !byKey && isAdmin(c);
+    // 쿠키로 바꾸는 요청은 화면이 붙이는 헤더가 있어야 한다 (다른 사이트에서 몰래 보내는 요청 막기)
+    if (byCookie && c.req.method !== 'GET' && c.req.header('x-meet-admin') !== '1') {
+      return c.json({ error: 'forbidden', message: '잘못된 요청이에요' }, 403);
+    }
+    if (!byKey && !byCookie) {
       return c.json({ error: 'unauthorized', message: '키가 맞지 않아요' }, 401, {
         'WWW-Authenticate': 'Bearer',
       });
@@ -83,7 +123,14 @@ export function createApp({ store, ownerKey, siteTitle, clock = () => new Date()
 
   app.get('/api/config', (c) => {
     const { from, to } = store.bookable();
-    return c.json({ title: siteTitle, today: nowKst(clock()).date, bookableFrom: from, bookableTo: to, slots: SLOTS });
+    return c.json({
+      title: store.settings().siteTitle,
+      today: nowKst(clock()).date,
+      bookableFrom: from,
+      bookableTo: to,
+      slots: SLOTS,
+      allday: ALLDAY,
+    });
   });
 
   app.get('/api/calendar', (c) => {
@@ -98,6 +145,7 @@ export function createApp({ store, ownerKey, siteTitle, clock = () => new Date()
     const r = store.createBooking({
       date: body.date,
       slot: body.slot,
+      slots: body.slots,
       start: body.start,
       end: body.end,
       name: body.name,
@@ -127,8 +175,71 @@ export function createApp({ store, ownerKey, siteTitle, clock = () => new Date()
     return c.json(r.booking);
   });
 
+  // ---------- 관리자 로그인 ----------
+  app.post('/api/admin/login', rateLimit(10, 10 * 60_000), async (c) => {
+    if (!adminPassword) {
+      return c.json({ error: 'disabled', message: '서버 .env에 ADMIN_PASSWORD가 없어서 로그인할 수 없어요' }, 503);
+    }
+    const body = await readJson(c);
+    if (typeof body.password !== 'string' || !keyMatches(body.password, adminPassword)) {
+      return c.json({ error: 'unauthorized', message: '비밀번호가 맞지 않아요' }, 401);
+    }
+    setCookie(c, ADMIN_COOKIE, signSession(secret, nowSec() + ADMIN_SESSION_SEC), {
+      path: '/',
+      httpOnly: true,
+      sameSite: 'Strict',
+      secure: isHttps(c),
+      maxAge: ADMIN_SESSION_SEC,
+    });
+    return c.json({ ok: true });
+  });
+
+  app.post('/api/admin/logout', (c) => {
+    deleteCookie(c, ADMIN_COOKIE, { path: '/' });
+    return c.json({ ok: true });
+  });
+
   // ---------- 주인 ----------
   app.use('/api/owner/*', ownerOnly);
+
+  app.get('/api/owner/me', (c) => c.json({ ok: true }));
+
+  app.get('/api/owner/calendar', (c) => {
+    const r = store.ownerMonth(c.req.query('month') ?? nowKst(clock()).date.slice(0, 7));
+    if (!r.ok) return sendFail(c, r);
+    return c.json({ days: r.days });
+  });
+
+  app.post('/api/owner/busy', async (c) => {
+    const body = await readJson(c);
+    if (body.repeat && typeof body.repeat === 'object') {
+      const rep = body.repeat as Record<string, unknown>;
+      const r = store.addRepeat(
+        {
+          weekdays: Array.isArray(rep.weekdays) ? rep.weekdays.map(Number) : [],
+          startTime: String(rep.startTime ?? ''),
+          endTime: String(rep.endTime ?? ''),
+          from: String(rep.from ?? ''),
+          until: String(rep.until ?? ''),
+        },
+        typeof body.title === 'string' ? body.title : undefined,
+      );
+      if (!r.ok) return sendFail(c, r);
+      return c.json({ created: r.created.length, seriesId: r.seriesId, conflicts: r.conflicts }, 201);
+    }
+    const r = store.addBusy(Array.isArray(body.blocks) ? body.blocks : []);
+    if (!r.ok) return sendFail(c, r);
+    return c.json({ created: r.created.length, conflicts: r.conflicts }, 201);
+  });
+
+  app.get('/api/owner/settings', (c) => c.json(store.settings()));
+
+  app.put('/api/owner/settings', async (c) => {
+    const body = await readJson(c);
+    const r = store.updateSettings({ siteTitle: body.siteTitle, bookingUntil: body.bookingUntil });
+    if (!r.ok) return sendFail(c, r);
+    return c.json(store.settings());
+  });
 
   app.get('/api/owner/summary', (c) => c.json(store.summary()));
 
@@ -177,7 +288,7 @@ export function createApp({ store, ownerKey, siteTitle, clock = () => new Date()
   // ---------- MCP ----------
   // 상태를 기억하지 않는 방식: 요청마다 서버와 전송 객체를 새로 만든다.
   app.all('/mcp', ownerOnly, async (c) => {
-    const server = createMcpServer(store, siteTitle, clock);
+    const server = createMcpServer(store, store.settings().siteTitle, clock);
     const transport = new WebStandardStreamableHTTPServerTransport({
       sessionIdGenerator: undefined,
       enableJsonResponse: true,

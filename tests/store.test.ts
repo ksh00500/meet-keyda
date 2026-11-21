@@ -49,6 +49,29 @@ describe('신청', () => {
     expect(cal.days.find((d) => d.date === '2027-01-25')?.state).toBe('closed');
   });
 
+  it('이어 붙인 칸(slots)으로 신청, 떨어진 칸은 거절', () => {
+    const { store } = makeStore();
+    const a = store.createBooking({ ...base, date: '2026-12-02', slots: ['lunch', 'am'] });
+    expect(a.ok && [a.booking.slot, a.booking.start, a.booking.end]).toEqual(['am+lunch', '2026-12-02T09:00', '2026-12-02T14:00']);
+    const b = store.createBooking({ ...base, date: '2026-12-03', slots: ['am', 'pm'] });
+    expect(!b.ok && b.message).toBe('붙어 있는 시간대만 함께 고를 수 있어요');
+    // 점심이 차도 오후·저녁은 신청 가능
+    store.createBooking({ ...base, date: '2026-12-04', slot: 'lunch' });
+    expect(store.createBooking({ ...base, name: '박준호', date: '2026-12-04', slot: 'pm' }).ok).toBe(true);
+    expect(store.createBooking({ ...base, name: '이서연', date: '2026-12-04', slot: 'allday' }).ok).toBe(false);
+  });
+
+  it('설정: 관리자 값이 .env 값보다 우선, 빈 값은 마감 없음', () => {
+    const { store } = makeStore(FIXED_NOW, '2027-01-24');
+    expect(store.settings()).toMatchObject({ siteTitle: '시호와 약속 잡기', bookingUntil: '2027-01-24', source: { bookingUntil: 'env' } });
+    expect(store.updateSettings({ bookingUntil: '2026-12-31', siteTitle: '시호랑 밥 먹자' }).ok).toBe(true);
+    expect(store.bookable().to).toBe('2026-12-31');
+    expect(store.settings().siteTitle).toBe('시호랑 밥 먹자');
+    store.updateSettings({ bookingUntil: '' });
+    expect(store.bookable().to).toBe('2027-02-19');
+    expect(store.updateSettings({ bookingUntil: '2026-13-01' }).ok).toBe(false);
+  });
+
   it('PIN 원문이 DB에 남지 않음', () => {
     const { store } = makeStore();
     store.createBooking({ ...base, pin: '4821', date: '2026-12-02', slot: 'lunch' });
@@ -100,7 +123,7 @@ describe('내 신청 찾기 (토큰, 이름 + PIN)', () => {
     store.createBooking({ ...base, date: '2026-12-02', slot: 'lunch' });
     store.createBooking({ ...base, pin: '9999', date: '2026-12-03', slot: 'lunch' });
     const l = store.lookup('김민지', '9999');
-    expect(l.ok && l.bookings.map((b) => b.start)).toEqual(['2026-12-03T11:30']);
+    expect(l.ok && l.bookings.map((b) => b.start)).toEqual(['2026-12-03T12:00']);
   });
 
   it('PIN 5번 틀리면 10분 잠금, 10분 뒤 풀림', () => {
