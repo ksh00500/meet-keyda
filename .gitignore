@@ -9,3 +9,7 @@ data/
 .env.*
 !.env.example
 /logs/
+
+# Cloudflare 터널 비밀 파일 (예시 설정만 커밋)
+cloudflared/*
+!cloudflared/config.example.yml

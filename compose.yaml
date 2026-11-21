@@ -15,12 +15,13 @@ services:
     ports:
       - "127.0.0.1:3000:3000"
 
+  # 터널 설정은 scripts/tunnel-setup.sh 가 cloudflared/ 에 만든다 (Zero Trust 대시보드 불필요)
   cloudflared:
     image: cloudflare/cloudflared:latest
     restart: unless-stopped
-    command: tunnel --no-autoupdate run
-    environment:
-      TUNNEL_TOKEN: ${TUNNEL_TOKEN:?TUNNEL_TOKEN을 .env에 넣어 주세요}
+    command: tunnel --no-autoupdate --config /etc/cloudflared/config.yml run
+    volumes:
+      - ./cloudflared:/etc/cloudflared:ro
     depends_on:
       app:
         condition: service_healthy

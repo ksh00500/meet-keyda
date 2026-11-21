@@ -23,38 +23,43 @@
 
 서버 포트를 밖으로 열지 않고, Cloudflare 터널로 `meet.keyda.site`를 연결합니다.
 
-### 1. Cloudflare에서 터널 만들기 (처음 한 번)
+Zero Trust 대시보드를 쓰지 않고, 서버에서 명령어로 터널을 만듭니다. 터널과 DNS 연결은 무료입니다. 준비물은 `keyda.site`가 Cloudflare에 연결되어 있는 것뿐입니다.
 
-1. Cloudflare 대시보드 → **Zero Trust** → **Networks** → **Tunnels** → **Create a tunnel** → **Cloudflared** 선택
-2. 이름을 정하고(예: `meet`) 저장하면 설치 명령이 나옵니다. 명령의 `--token` 뒤에 있는 긴 값을 복사해 둡니다. 이 값이 `TUNNEL_TOKEN`입니다. 다른 사람에게 보여 주지 마세요.
-3. **Public Hostname** 추가
-   - Subdomain: `meet`, Domain: `keyda.site`
-   - Service: `HTTP` · `app:3000`
-
-### 2. 서버에서 실행
+### 1. 저장소 받기와 .env
 
 ```bash
 git clone https://github.com/ksh00500/meet-keyda.git
 cd meet-keyda
 cp .env.example .env
-```
-
-`.env`를 열어 값을 채웁니다.
-
-```bash
-openssl rand -hex 32   # 이 출력값을 OWNER_KEY에 넣기
+openssl rand -hex 32   # 이 출력값을 .env 의 OWNER_KEY 에 넣기
 ```
 
 | 변수 | 값 |
 | --- | --- |
 | `OWNER_KEY` | 위에서 만든 64자 값. 주인 화면 비밀 키이자 MCP Bearer 토큰 |
-| `TUNNEL_TOKEN` | 1번에서 복사한 터널 토큰 |
 | `SITE_TITLE` | 화면 제목 (기본 "시호와 약속 잡기") |
 | `SEED_DEMO` | 비워 두기. `1`이면 빈 DB에 예시 데이터를 넣음 (점검용) |
 
+### 2. 터널 만들기 (처음 한 번)
+
+```bash
+./scripts/tunnel-setup.sh
+```
+
+스크립트가 cloudflared Docker 이미지로 세 가지를 차례로 합니다.
+
+1. `cloudflared tunnel login`: 화면에 나오는 주소를 브라우저에서 열고 `keyda.site`를 고릅니다.
+2. `cloudflared tunnel create meet`: 터널을 만듭니다.
+3. `cloudflared tunnel route dns`: `meet.keyda.site` DNS 기록을 만듭니다.
+
+결과 파일은 `cloudflared/` 폴더에 생깁니다: `cert.pem`, `<터널ID>.json`, `config.yml`. 이 파일들은 비밀이라 git에서 제외되어 있습니다. 다른 이름이나 주소를 쓰려면 `./scripts/tunnel-setup.sh 터널이름 주소`로 실행합니다.
+
+### 3. 실행
+
 ```bash
 docker compose up -d --build
-docker compose ps        # app 이 healthy 인지 확인
+docker compose ps                  # app 이 healthy 인지 확인
+docker compose logs cloudflared    # "Registered tunnel connection" 이 보이면 연결됨
 curl -s http://127.0.0.1:3000/api/health   # {"ok":true}
 ```
 
@@ -125,7 +130,7 @@ OWNER_KEY=local-dev-key-0123456789abcdef SEED_DEMO=1 npm run dev
 
 ## 보안 메모
 
-- `OWNER_KEY`, `TUNNEL_TOKEN`은 서버의 `.env`에만 둡니다. `.env`는 커밋하지 않습니다.
+- `OWNER_KEY`는 서버의 `.env`에만, 터널 자격 증명은 서버의 `cloudflared/`에만 둡니다. 둘 다 커밋하지 않습니다.
 - 친구 API 응답에는 일정 제목, 다른 친구의 이름·메모가 들어가지 않습니다.
 - PIN은 scrypt 해시로만 저장합니다. 이름 + PIN은 "내 신청 다시 찾기"용이며 본인 인증은 아닙니다.
 - 로그인이 없어서 누구나 아무 이름으로 신청할 수 있습니다. 수락할 때 확인하세요.
