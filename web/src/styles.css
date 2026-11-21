@@ -221,8 +221,21 @@ button:disabled {
   background: transparent;
   flex: none;
 }
-.icon-btn:hover:not(:disabled) {
-  background: rgba(31, 42, 42, 0.07);
+@media (hover: hover) {
+  .icon-btn:hover:not(:disabled) {
+    background: rgba(31, 42, 42, 0.07);
+  }
+}
+.only-narrow {
+  display: none;
+}
+@media (max-width: 559px) {
+  .only-wide {
+    display: none;
+  }
+  .only-narrow {
+    display: inline;
+  }
 }
 .icon-btn:disabled {
   opacity: 0.25;
@@ -289,6 +302,63 @@ button:disabled {
 .legend__text b {
   color: var(--ink);
   font-weight: 700;
+}
+.legend__map {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+}
+/* 실제 날짜 칸과 같은 모양의 작은 견본 */
+.legend__cell {
+  width: 52px;
+  flex: none;
+  display: grid;
+  gap: 6px;
+  padding: 5px 5px 6px;
+  border-radius: 10px;
+  background: var(--paper);
+  box-shadow: 0 1px 0 rgba(31, 42, 42, 0.08);
+}
+.legend__num {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ink);
+}
+.legend__periods {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 1px;
+  font-size: var(--fs-xs);
+  font-variant-numeric: tabular-nums;
+}
+.legend__periods b {
+  color: var(--ink);
+}
+/* 세로로 쌓인 막대와 줄을 맞추려고 왼쪽에 짧은 연결선 */
+.legend__periods li::before {
+  content: '';
+  display: inline-block;
+  width: 10px;
+  height: 1.5px;
+  margin-right: 6px;
+  vertical-align: middle;
+  background: rgba(31, 42, 42, 0.35);
+}
+/* 넓은 화면은 가로 세 칸이므로 목록도 가로로 */
+@media (min-width: 560px) {
+  .legend__cell {
+    width: 96px;
+  }
+  .legend__periods {
+    grid-auto-flow: column;
+    gap: 14px;
+  }
+  .legend__periods li::before {
+    display: none;
+  }
 }
 .legend__keys {
   display: flex;
@@ -602,6 +672,14 @@ button:disabled {
 .day--full {
   background: #fbe4de;
   box-shadow: none;
+}
+.day--booked-out,
+.wrow--booked-out {
+  background: #ebe8e1;
+}
+.day--booked-out .day__note--full,
+.wrow--booked-out .wnote {
+  color: var(--ink-soft);
 }
 .day--full .day__num {
   color: rgba(31, 42, 42, 0.55);

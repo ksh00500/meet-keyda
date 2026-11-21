@@ -103,5 +103,12 @@ describe('캘린더 칸 세 구간', async () => {
     expect(s2).toEqual(['free', 'free', 'busy']);
     expect(daySummary(s2)).toBe('오전·오후 가능');
     expect(daySummary(periodStates('2026-12-01', []))).toBe('종일 가능');
+    // 오전·오후 불가, 저녁은 18–19시만 빔
+    const s3 = periodStates('2026-12-01', [
+      { start: '2026-12-01T09:00', end: '2026-12-01T18:00', kind: 'busy' as const },
+      { start: '2026-12-01T19:00', end: '2026-12-01T22:00', kind: 'busy' as const },
+    ]);
+    expect(s3).toEqual(['busy', 'busy', 'some']);
+    expect(daySummary(s3)).toBe('저녁 일부 가능');
   });
 });

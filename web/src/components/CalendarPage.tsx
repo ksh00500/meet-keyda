@@ -1,6 +1,6 @@
 import { CalendarDays, CalendarRange, ChevronLeft, ChevronRight, EyeOff, ListChecks } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { daySummary, periodStates } from '../../../server/domain/availability.js';
+import { PERIODS, daySummary, periodStates } from '../../../server/domain/availability.js';
 import { addDays, weekday } from '../../../server/domain/time.js';
 import { navigate } from '../App.js';
 import { api, local, type CalendarDay, type Config } from '../api.js';
@@ -146,12 +146,14 @@ export function CalendarPage({ config }: { config: Config }) {
     const mine = mineDates.get(d.date);
     const isToday = d.date === config.today;
     const periods = periodStates(d.date, d.blocks);
-    const summary = d.state === 'full' ? '불가' : daySummary(periods);
+    // 꽉 찬 날: 내 일정 때문이면 "불가", 다른 신청 때문이면 "예약 마감"
+    const fullByBooking = d.state === 'full' && periods.every((p) => p === 'booked');
+    const summary = d.state === 'full' ? (fullByBooking ? '예약 마감' : '불가') : daySummary(periods);
     const disabled = d.state === 'closed' || d.state === 'full';
     const label = `${Number(d.date.slice(5, 7))}월 ${n}일 ${WEEK[weekday(d.date)]}요일, ${isToday ? '오늘, ' : ''}${
       d.state === 'closed' ? CLOSED_LABEL : summary
     }${mine ? `, 내 신청 ${mine === 'confirmed' ? '확정' : '신청 중'}` : ''}`;
-    return { n, mine, isToday, periods, summary, disabled, label };
+    return { n, mine, isToday, periods, summary, disabled, label, fullByBooking };
   };
 
   return (
@@ -193,14 +195,23 @@ export function CalendarPage({ config }: { config: Config }) {
 
           {view === 'month' ? (
             <div className="legend" aria-label="표시 안내">
-              <span className="legend__sample" aria-hidden>
-                <i className="seg seg--free" />
-                <i className="seg seg--free" />
-                <i className="seg seg--free" />
-              </span>
-              <span className="legend__text">
-                칸 아래 표시는 <b>오전 · 오후 · 저녁</b>
-              </span>
+              <div className="legend__map">
+                <span className="legend__cell" aria-hidden>
+                  <span className="legend__num">12</span>
+                  <span className="segs">
+                    <i className="seg seg--free" />
+                    <i className="seg seg--free" />
+                    <i className="seg seg--free" />
+                  </span>
+                </span>
+                <ol className="legend__periods">
+                  {PERIODS.map((p) => (
+                    <li key={p.id}>
+                      <b>{p.label}</b> {Number(p.start.slice(0, 2))}–{Number(p.end.slice(0, 2))}시
+                    </li>
+                  ))}
+                </ol>
+              </div>
               <Keys mine={mineDates.size > 0} />
             </div>
           ) : (
@@ -235,7 +246,7 @@ export function CalendarPage({ config }: { config: Config }) {
                   return (
                     <button
                       key={d.date}
-                      className={`day day--${d.state}${selected === d.date ? ' day--selected' : ''}`}
+                      className={`day day--${d.state}${x.fullByBooking ? ' day--booked-out' : ''}${selected === d.date ? ' day--selected' : ''}`}
                       disabled={x.disabled}
                       onClick={() => setSelected(d.date)}
                       aria-label={x.label}
@@ -248,7 +259,16 @@ export function CalendarPage({ config }: { config: Config }) {
                       {x.isToday ? (
                         <span className="day__note day__note--today">오늘</span>
                       ) : d.state !== 'closed' ? (
-                        <span className={`day__note${d.state === 'full' ? ' day__note--full' : ''}`}>{x.summary}</span>
+                        <span className={`day__note${d.state === 'full' ? ' day__note--full' : ''}`}>
+                          {x.fullByBooking ? (
+                            <>
+                              <span className="only-wide">예약 마감</span>
+                              <span className="only-narrow">마감</span>
+                            </>
+                          ) : (
+                            x.summary
+                          )}
+                        </span>
                       ) : null}
                       {d.state !== 'closed' && (
                         <span className="segs" aria-hidden>
@@ -280,7 +300,7 @@ export function CalendarPage({ config }: { config: Config }) {
                 return (
                   <button
                     key={d.date}
-                    className={`wrow wrow--${d.state}${selected === d.date ? ' wrow--selected' : ''}`}
+                    className={`wrow wrow--${d.state}${x.fullByBooking ? ' wrow--booked-out' : ''}${selected === d.date ? ' wrow--selected' : ''}`}
                     disabled={x.disabled}
                     onClick={() => setSelected(d.date)}
                     aria-label={x.label}

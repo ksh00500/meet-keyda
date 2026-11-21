@@ -86,9 +86,13 @@ export function periodStates(date: string, blocks: DayBlock[]): PeriodState[] {
 
 /** 칸에 쓸 짧은 요약. 예: "종일 가능", "저녁 가능", "오전·오후 가능" */
 export function daySummary(states: PeriodState[]): string {
-  const open = PERIODS.filter((_, i) => states[i] === 'free' || states[i] === 'some').map((p) => p.label);
-  if (open.length === 0) return '불가';
-  if (open.length === 3) return states.every((s) => s === 'free') ? '종일 가능' : '일부 시간 가능';
-  return `${open.join('·')} 가능`;
+  const openIdx = states.map((s, i) => (s === 'free' || s === 'some' ? i : -1)).filter((i) => i >= 0);
+  if (openIdx.length === 0) return '불가';
+  const allFree = openIdx.every((i) => states[i] === 'free');
+  if (openIdx.length === 3) return allFree ? '종일 가능' : '일부 시간 가능';
+  const names = openIdx.map((i) => PERIODS[i].label).join('·');
+  // 빈 구간이 전부 '조금만' 비어 있으면 그렇게 말한다. 예: 저녁 18–19시만 빔 → "저녁 일부 가능"
+  if (openIdx.every((i) => states[i] === 'some')) return `${names} 일부 가능`;
+  return allFree ? `${names} 가능` : '일부 시간 가능';
 }
 

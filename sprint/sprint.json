@@ -122,6 +122,12 @@
           "saved_at": "2026-11-21T07:37:45+00:00",
           "note": "세로 막대, 주간 보기",
           "stage": "build"
+        },
+        {
+          "sha256": "429fb802f140874facc9d0527afb3e5f92a5f574eb0e553b5ce69ec0e1956e89",
+          "saved_at": "2026-11-21T07:42:06+00:00",
+          "note": "범례, 12월 점검",
+          "stage": "build"
         }
       ]
     }
@@ -539,6 +545,32 @@
           "log_sha256": "007b5c6dc75db33536ae4562b3d56c64745aed49e462ef68510fd90a7df75203"
         }
       ]
+    },
+    {
+      "id": "T15",
+      "title": "T15 범례 견본 칸 + 12월 점검 (예약 마감 구분)",
+      "must": true,
+      "status": "verified",
+      "history": [
+        {
+          "status": "todo",
+          "at": "2026-11-21T07:42:06+00:00"
+        },
+        {
+          "status": "verified",
+          "note": "node tests/e2e/december.cjs (+ shots, flow2, weekview, timeline, vitest)",
+          "at": "2026-11-21T07:42:06+00:00"
+        }
+      ],
+      "evidence": [
+        {
+          "command": "node tests/e2e/december.cjs (+ shots, flow2, weekview, timeline, vitest)",
+          "exit_code": 0,
+          "at": "2026-11-21T07:42:06+00:00",
+          "log": "logs/e2e-december.log",
+          "log_sha256": "755879322b3e0f522d3ef291389d2e304472766ce42f232fc4f249ecfbe8f1b6"
+        }
+      ]
     }
   ],
   "cuts": [
@@ -573,5 +605,5 @@
       "at": "2026-11-21T06:00:36+00:00"
     }
   ],
-  "updated_at": "2026-11-21T07:37:45+00:00"
+  "updated_at": "2026-11-21T07:42:06+00:00"
 }
