@@ -104,6 +104,12 @@
           "saved_at": "2026-11-21T06:29:46+00:00",
           "note": "디자인 고도화 기록",
           "stage": "build"
+        },
+        {
+          "sha256": "bd69e5ec2be55fa795a9585805f97a8c5a9762a02340845bb46f3049d70d46bb",
+          "saved_at": "2026-11-21T06:53:34+00:00",
+          "note": "시간 막대 고도화",
+          "stage": "build"
         }
       ]
     }
@@ -443,6 +449,32 @@
           "log_sha256": "c892d02df344bc52abc597e8ff0716e968439ecfbc2b29786be3be46e7e8ef86"
         }
       ]
+    },
+    {
+      "id": "T12",
+      "title": "T12 시간 막대 고도화 (눈금, 빈 곳 누르기, 빈 시간 알약)",
+      "must": true,
+      "status": "verified",
+      "history": [
+        {
+          "status": "todo",
+          "at": "2026-11-21T06:53:33+00:00"
+        },
+        {
+          "status": "verified",
+          "note": "node tests/e2e/timeline.cjs (아이폰13)",
+          "at": "2026-11-21T06:53:33+00:00"
+        }
+      ],
+      "evidence": [
+        {
+          "command": "node tests/e2e/timeline.cjs (아이폰13)",
+          "exit_code": 0,
+          "at": "2026-11-21T06:53:33+00:00",
+          "log": "logs/e2e-timeline.log",
+          "log_sha256": "6fb2e6d6d6c2c099d932cd1ee04ff59eb3be851690ed6ade1abaed013558a6a5"
+        }
+      ]
     }
   ],
   "cuts": [
@@ -477,5 +509,5 @@
       "at": "2026-11-21T06:00:36+00:00"
     }
   ],
-  "updated_at": "2026-11-21T06:29:46+00:00"
+  "updated_at": "2026-11-21T06:53:34+00:00"
 }

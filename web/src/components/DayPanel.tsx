@@ -157,7 +157,18 @@ export function DayPanel({ config, day, onClose, onBooked }: Props) {
 
         {step === 'time' && (
           <>
-            <Timeline date={day.date} blocks={day.blocks} selection={selection?.range ?? null} />
+            <Timeline
+              date={day.date}
+              blocks={day.blocks}
+              selection={selection?.range ?? null}
+              onPick={(start, end) => {
+                setChoice('custom');
+                setCustomStart(start);
+                setCustomEnd(end);
+                setError(null);
+              }}
+            />
+            <p className="hint hint--small">막대의 빈 곳이나 빈 시간을 누르면 그 시간부터 1시간이 골라져요. 아래에서 시간대를 골라도 돼요.</p>
 
             {noneAvailable && <p className="hint">기본 시간대는 다 찼어요. 직접 선택으로 빈 시간을 골라 보세요.</p>}
             <div className="chips" role="radiogroup" aria-label="시간대">
