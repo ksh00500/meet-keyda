@@ -178,7 +178,7 @@ export function createApp({ store, ownerKey, adminPassword = '', clock = () => n
   // ---------- 관리자 로그인 ----------
   app.post('/api/admin/login', rateLimit(10, 10 * 60_000), async (c) => {
     if (!adminPassword) {
-      return c.json({ error: 'disabled', message: '서버 .env에 ADMIN_PASSWORD가 없어서 로그인할 수 없어요' }, 503);
+      return c.json({ error: 'disabled', message: '서버 .env의 ADMIN_PASSWORD가 없거나 8자보다 짧아서 로그인할 수 없어요' }, 503);
     }
     const body = await readJson(c);
     if (typeof body.password !== 'string' || !keyMatches(body.password, adminPassword)) {

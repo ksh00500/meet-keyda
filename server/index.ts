@@ -27,12 +27,14 @@ const db = openDb(dbPath);
 const store = new Store(db, undefined, bookingUntil, siteTitle);
 if (process.env.SEED_DEMO === '1' && seedDemo(store)) console.log('예시 데이터를 넣었습니다 (SEED_DEMO=1).');
 
-const adminPassword = process.env.ADMIN_PASSWORD ?? '';
-if (adminPassword && adminPassword.length < 8) {
-  console.error('ADMIN_PASSWORD는 8자 이상이어야 합니다.');
-  process.exit(1);
+// 관리자 비밀번호 문제로 친구 화면까지 멈추지 않게, 잘못되면 관리자 로그인만 끈다
+let adminPassword = process.env.ADMIN_PASSWORD ?? '';
+if (adminPassword && [...adminPassword].length < 8) {
+  console.error('ADMIN_PASSWORD는 8자 이상이어야 합니다. 관리자 로그인을 끈 채로 시작합니다. .env를 고친 뒤 docker compose up -d 하세요.');
+  adminPassword = '';
+} else if (!adminPassword) {
+  console.warn('ADMIN_PASSWORD가 없어 관리자 화면(/admin)에 로그인할 수 없습니다.');
 }
-if (!adminPassword) console.warn('ADMIN_PASSWORD가 없어 관리자 화면(/admin)에 로그인할 수 없습니다.');
 const app = createApp({ store, ownerKey, adminPassword });
 
 if (existsSync(webDir)) {
