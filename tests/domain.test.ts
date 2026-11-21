@@ -8,6 +8,9 @@ describe('시간 규칙', () => {
   it('한국 시간 오늘과 신청 가능 기간(내일~90일)', () => {
     expect(nowKst(FIXED_NOW).date).toBe('2026-11-21');
     expect(bookableRange(FIXED_NOW)).toEqual({ from: '2026-11-22', to: '2027-02-19' });
+    // 마감 날짜가 있으면 그날까지, 90일보다 늦으면 90일
+    expect(bookableRange(FIXED_NOW, '2027-01-24')).toEqual({ from: '2026-11-22', to: '2027-01-24' });
+    expect(bookableRange(FIXED_NOW, '2027-12-31').to).toBe('2027-02-19');
     // UTC로는 전날 밤이어도 한국은 다음 날
     expect(nowKst(new Date('2026-11-21T15:30:00Z')).date).toBe('2026-11-22');
   });

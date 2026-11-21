@@ -9,6 +9,7 @@ services:
       OWNER_KEY: ${OWNER_KEY:?OWNER_KEY를 .env에 넣어 주세요}
       SITE_TITLE: ${SITE_TITLE:-시호와 약속 잡기}
       SEED_DEMO: ${SEED_DEMO:-}
+      BOOKING_UNTIL: ${BOOKING_UNTIL:-}
     volumes:
       - meet-data:/data
     # 서버 안에서만 확인용으로 열어 둠 (바깥 인터넷에는 열리지 않음)

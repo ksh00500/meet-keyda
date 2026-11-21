@@ -38,6 +38,17 @@ describe('신청', () => {
     expect(store.createBooking({ ...base, name: 'ㄱ'.repeat(21), date: '2026-12-10', slot: 'lunch' }).ok).toBe(false);
   });
 
+  it('BOOKING_UNTIL: 그날까지만 받고, 캘린더에서 이후는 closed', () => {
+    const { store } = makeStore(FIXED_NOW, '2027-01-24');
+    expect(store.createBooking({ ...base, date: '2027-01-24', slot: 'dinner' }).ok).toBe(true);
+    const late = store.createBooking({ ...base, date: '2027-01-25', slot: 'dinner' });
+    expect(!late.ok && late.message).toBe('내일부터 1월 24일까지만 신청할 수 있어요');
+    const cal = store.calendar('2027-01');
+    if ('ok' in cal) throw new Error();
+    expect(cal.days.find((d) => d.date === '2027-01-24')?.state).not.toBe('closed');
+    expect(cal.days.find((d) => d.date === '2027-01-25')?.state).toBe('closed');
+  });
+
   it('PIN 원문이 DB에 남지 않음', () => {
     const { store } = makeStore();
     store.createBooking({ ...base, pin: '4821', date: '2026-12-02', slot: 'lunch' });

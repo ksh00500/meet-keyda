@@ -6,10 +6,10 @@ import { createApp } from '../server/app.js';
 export const FIXED_NOW = new Date('2026-11-21T03:00:00Z');
 export const OWNER_KEY = 'test-owner-key-0123456789abcdef';
 
-export function makeStore(now: Date = FIXED_NOW) {
+export function makeStore(now: Date = FIXED_NOW, until: string | null = null) {
   let current = now;
   const clock = () => current;
-  const store = new Store(openDb(':memory:'), clock);
+  const store = new Store(openDb(':memory:'), clock, until);
   return { store, clock, setNow: (d: Date) => (current = d) };
 }
 

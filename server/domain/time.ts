@@ -89,10 +89,16 @@ export function nowKst(now: Date = new Date()): { date: string; stamp: string } 
   return { date: iso.slice(0, 10), stamp: iso.slice(0, 16) };
 }
 
-/** 신청 가능한 날짜 범위: 내일부터 90일 뒤까지 (양 끝 포함) */
-export function bookableRange(now: Date = new Date()): { from: string; to: string } {
+/**
+ * 신청 가능한 날짜 범위 (양 끝 포함): 내일부터 90일 뒤까지.
+ * until(YYYY-MM-DD)을 주면 그 날짜까지만 받는다 (90일보다 이르면 until이 끝).
+ * until이 내일보다 앞이면 to < from 이 되어 신청할 수 있는 날이 없다.
+ */
+export function bookableRange(now: Date = new Date(), until?: string | null): { from: string; to: string } {
   const today = nowKst(now).date;
-  return { from: addDays(today, 1), to: addDays(today, BOOKABLE_DAYS) };
+  const rolling = addDays(today, BOOKABLE_DAYS);
+  const to = until && isDate(until) && until < rolling ? until : rolling;
+  return { from: addDays(today, 1), to };
 }
 
 export function overlaps(aStart: string, aEnd: string, bStart: string, bEnd: string): boolean {

@@ -34,9 +34,9 @@ function weekStart(date: string): string {
 
 export function CalendarPage({ config }: { config: Config }) {
   const firstMonth = config.bookableFrom.slice(0, 7);
-  const lastMonth = config.bookableTo.slice(0, 7);
+  const lastMonth = config.bookableTo < config.bookableFrom ? config.bookableFrom.slice(0, 7) : config.bookableTo.slice(0, 7);
   const firstWeek = weekStart(config.bookableFrom);
-  const lastWeek = weekStart(config.bookableTo);
+  const lastWeek = weekStart(config.bookableTo < config.bookableFrom ? config.bookableFrom : config.bookableTo);
 
   const [view, setViewState] = useState<View>(savedView);
   const [month, setMonth] = useState(firstMonth);
@@ -335,7 +335,9 @@ export function CalendarPage({ config }: { config: Config }) {
             </div>
           )}
           <p className="calendar__foot">
-            내일부터 {Number(config.bookableTo.slice(5, 7))}월 {Number(config.bookableTo.slice(8))}일까지 신청할 수 있어요.
+            {config.bookableTo < config.bookableFrom
+              ? '지금은 새 약속 신청을 받지 않아요.'
+              : `내일부터 ${Number(config.bookableTo.slice(5, 7))}월 ${Number(config.bookableTo.slice(8))}일까지 신청할 수 있어요.`}
           </p>
         </section>
       </main>

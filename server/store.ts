@@ -152,7 +152,14 @@ export class Store {
   constructor(
     readonly db: DB,
     private readonly clock: () => Date = () => new Date(),
+    /** 이 날짜(YYYY-MM-DD)까지만 신청을 받음. 없으면 90일 */
+    readonly bookingUntil: string | null = null,
   ) {}
+
+  /** 친구가 신청할 수 있는 날짜 범위 */
+  bookable(): { from: string; to: string } {
+    return bookableRange(this.clock(), this.bookingUntil);
+  }
 
   private nowIso(): string {
     return this.clock().toISOString();
@@ -186,7 +193,7 @@ export class Store {
     const days = monthDays(month);
     const from = `${days[0]}T00:00`;
     const to = `${addDays(days[days.length - 1], 1)}T00:00`;
-    const { from: openFrom, to: openTo } = bookableRange(this.clock());
+    const { from: openFrom, to: openTo } = this.bookable();
     const busy = this.db
       .prepare<[string, string], BusyRow>('SELECT * FROM busy_blocks WHERE start_at < ? AND end_at > ?')
       .all(to, from);
@@ -234,9 +241,10 @@ export class Store {
     );
     if (!r.ok) return { ok: false, error: r.error, message: r.message };
     const date = String(input.date);
-    const { from, to } = bookableRange(this.clock());
+    const { from, to } = this.bookable();
     if (date < from || date > to) {
-      return { ok: false, error: 'out_of_range', message: '내일부터 90일 안의 날짜만 신청할 수 있어요' };
+      const [, m, d] = to.split('-').map(Number);
+      return { ok: false, error: 'out_of_range', message: `내일부터 ${m}월 ${d}일까지만 신청할 수 있어요` };
     }
     const { start, end } = r.range;
     const pinHash = hashPin(input.pin);

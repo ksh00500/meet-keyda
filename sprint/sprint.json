@@ -60,6 +60,12 @@
           "saved_at": "2026-11-21T05:52:14+00:00",
           "note": "결정 반영: 기간 90일, 당일 막음, Should 3개, 친구 PIN",
           "stage": "spec"
+        },
+        {
+          "sha256": "e80d2ed962d47be0ab777741c5ad854487fa88d9e0859a7dfa325a9d7385d89b",
+          "saved_at": "2026-11-21T07:48:35+00:00",
+          "note": "신청 기간 변경: 1월 24일까지",
+          "stage": "build"
         }
       ]
     },
@@ -133,6 +139,12 @@
           "sha256": "c758607a41dedd232d4496a82e1ef32f4b619e638158f37db4570a6ca20d28a3",
           "saved_at": "2026-11-21T07:46:41+00:00",
           "note": "월요일 시작",
+          "stage": "build"
+        },
+        {
+          "sha256": "a2ec73565765a0fbb4ae46b7e63cb1ead30f222da54f47215d180811fdc6afaa",
+          "saved_at": "2026-11-21T07:48:35+00:00",
+          "note": "신청 마감 날짜",
           "stage": "build"
         }
       ]
@@ -603,6 +615,32 @@
           "log_sha256": "7bca8e97340c7bbb109e1ea5135ed8922b4969a2b142587bd5fb3e870df72eb4"
         }
       ]
+    },
+    {
+      "id": "T17",
+      "title": "T17 신청 마감 날짜 (BOOKING_UNTIL=2027-01-24)",
+      "must": true,
+      "status": "verified",
+      "history": [
+        {
+          "status": "todo",
+          "at": "2026-11-21T07:48:35+00:00"
+        },
+        {
+          "status": "verified",
+          "note": "npx vitest run && node tests/e2e/until.cjs (+ 다른 점검 5개)",
+          "at": "2026-11-21T07:48:35+00:00"
+        }
+      ],
+      "evidence": [
+        {
+          "command": "npx vitest run && node tests/e2e/until.cjs (+ 다른 점검 5개)",
+          "exit_code": 0,
+          "at": "2026-11-21T07:48:35+00:00",
+          "log": "logs/e2e-until.log",
+          "log_sha256": "477b3cba6aecdf2141265d2725e80978cdf5b3760755d6641723696e52aad03a"
+        }
+      ]
     }
   ],
   "cuts": [
@@ -637,5 +675,5 @@
       "at": "2026-11-21T06:00:36+00:00"
     }
   ],
-  "updated_at": "2026-11-21T07:46:41+00:00"
+  "updated_at": "2026-11-21T07:48:35+00:00"
 }

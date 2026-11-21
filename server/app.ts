@@ -1,7 +1,7 @@
 import { createHash, timingSafeEqual } from 'node:crypto';
 import { Hono, type Context, type MiddlewareHandler } from 'hono';
 import { WebStandardStreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js';
-import { SLOTS, bookableRange, nowKst } from './domain/time.js';
+import { SLOTS, nowKst } from './domain/time.js';
 import { createMcpServer } from './mcp/server.js';
 import type { BookingStatus, Fail, Store } from './store.js';
 
@@ -82,7 +82,7 @@ export function createApp({ store, ownerKey, siteTitle, clock = () => new Date()
   app.get('/api/health', (c) => c.json({ ok: true }));
 
   app.get('/api/config', (c) => {
-    const { from, to } = bookableRange(clock());
+    const { from, to } = store.bookable();
     return c.json({ title: siteTitle, today: nowKst(clock()).date, bookableFrom: from, bookableTo: to, slots: SLOTS });
   });
 
@@ -157,7 +157,7 @@ export function createApp({ store, ownerKey, siteTitle, clock = () => new Date()
 
   app.get('/api/owner/busy', (c) => {
     const today = nowKst(clock()).date;
-    const r = store.schedule(c.req.query('from') ?? today, c.req.query('to') ?? bookableRange(clock()).to);
+    const r = store.schedule(c.req.query('from') ?? today, c.req.query('to') ?? store.bookable().to);
     if (!r.ok) return sendFail(c, r);
     return c.json({ busy: r.busy });
   });

@@ -12,6 +12,11 @@ const siteTitle = process.env.SITE_TITLE?.trim() || '시호와 약속 잡기';
 const dbPath = process.env.DB_PATH ?? resolve('data/meet.db');
 const port = Number(process.env.PORT ?? 3000);
 const webDir = resolve(process.env.WEB_DIR ?? 'dist/web');
+const bookingUntil = process.env.BOOKING_UNTIL?.trim() || null;
+if (bookingUntil && !/^\d{4}-\d{2}-\d{2}$/.test(bookingUntil)) {
+  console.error('BOOKING_UNTIL은 YYYY-MM-DD 형식이어야 합니다. 예: 2027-01-24');
+  process.exit(1);
+}
 
 if (ownerKey.length < 24) {
   console.error('OWNER_KEY가 없거나 너무 짧습니다 (24자 이상). 예: openssl rand -hex 32 로 만든 값을 .env에 넣으세요.');
@@ -19,7 +24,7 @@ if (ownerKey.length < 24) {
 }
 
 const db = openDb(dbPath);
-const store = new Store(db);
+const store = new Store(db, undefined, bookingUntil);
 if (process.env.SEED_DEMO === '1' && seedDemo(store)) console.log('예시 데이터를 넣었습니다 (SEED_DEMO=1).');
 
 const app = createApp({ store, ownerKey, siteTitle });

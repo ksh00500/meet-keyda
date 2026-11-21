@@ -1,6 +1,6 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
-import { SLOTS, bookableRange, nowKst } from '../domain/time.js';
+import { SLOTS, nowKst } from '../domain/time.js';
 import type { Store } from '../store.js';
 
 const TIME_NOTE =
@@ -50,7 +50,7 @@ export function createMcpServer(store: Store, siteTitle: string, clock: () => Da
     async ({ from, to, includeInactive }) => {
       const r = store.schedule(from, to, includeInactive ?? false);
       if (!r.ok) return fail(r.message);
-      return json({ today: nowKst(clock()).date, bookableRange: bookableRange(clock()), ...r, ok: undefined });
+      return json({ today: nowKst(clock()).date, bookableRange: store.bookable(), ...r, ok: undefined });
     },
   );
 
