@@ -340,17 +340,17 @@ export class Store {
     return { ok: true, bookings: out };
   }
 
-  /** 친구가 자기 '신청 중' 신청을 취소 (F14) */
-  cancelByFriend(id: string, token: unknown): { ok: true; booking: FriendBooking } | Fail {
-    if (typeof token !== 'string' || !/^[0-9a-f]{64}$/.test(token)) {
+  /** 친구가 자기 '신청 중' 신청을 취소 (F14). 이 기기에 저장된 토큰 중 하나라도 맞으면 본인 */
+  cancelByFriend(id: string, tokens: unknown): { ok: true; booking: FriendBooking } | Fail {
+    const list = (Array.isArray(tokens) ? tokens : [tokens])
+      .filter((t): t is string => typeof t === 'string' && /^[0-9a-f]{64}$/.test(t))
+      .slice(0, 100);
+    const check = this.db.prepare<[string, string], { booking_id: string }>(
+      'SELECT booking_id FROM booking_tokens WHERE token_hash = ? AND booking_id = ?',
+    );
+    if (!list.some((t) => check.get(sha256(t), id))) {
       return { ok: false, error: 'forbidden', message: '이 신청을 취소할 수 없어요', status: 403 };
     }
-    const owns = this.db
-      .prepare<[string, string], { booking_id: string }>(
-        'SELECT booking_id FROM booking_tokens WHERE token_hash = ? AND booking_id = ?',
-      )
-      .get(sha256(token), id);
-    if (!owns) return { ok: false, error: 'forbidden', message: '이 신청을 취소할 수 없어요', status: 403 };
     const row = this.getBooking(id);
     if (!row) return { ok: false, error: 'not_found', message: '신청을 찾을 수 없어요', status: 404 };
     if (row.status !== 'pending') {

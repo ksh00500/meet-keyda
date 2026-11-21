@@ -122,7 +122,7 @@ export function createApp({ store, ownerKey, siteTitle, clock = () => new Date()
 
   app.post('/api/bookings/:id/cancel', async (c) => {
     const body = await readJson(c);
-    const r = store.cancelByFriend(c.req.param('id'), body.token);
+    const r = store.cancelByFriend(c.req.param('id'), body.tokens ?? body.token);
     if (!r.ok) return sendFail(c, r);
     return c.json(r.booking);
   });

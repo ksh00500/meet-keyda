@@ -1,5 +1,9 @@
 // 날짜별 가능 여부 판정. 서버(캘린더 상태)와 화면(버튼 비활성화)이 같은 규칙을 쓴다.
-import { SLOTS, type SlotId, clipToDay, overlaps, stamp } from './time.js';
+import { SLOTS, STEP_MIN, type SlotId, clipToDay, minToTime, overlaps, stamp } from './time.js';
+
+/** 직접 선택으로라도 고를 빈 30분이 있는지 보는 시간 범위 (종일 시간대와 같음) */
+const OPEN_FROM = 9 * 60;
+const OPEN_TO = 22 * 60;
 
 export type BlockKind = 'busy' | 'booked';
 
@@ -39,5 +43,14 @@ export function dayState(date: string, blocks: DayBlock[], inWindow: boolean): D
   if (!inWindow) return 'closed';
   const onDay = blocks.filter((b) => clipToDay(b, date) !== null);
   if (onDay.length === 0) return 'free';
-  return slotStatuses(date, onDay).some((s) => s.available) ? 'partial' : 'full';
+  if (slotStatuses(date, onDay).some((s) => s.available)) return 'partial';
+  return hasFreeStep(date, onDay) ? 'partial' : 'full';
+}
+
+/** 09–22시 안에 직접 선택할 수 있는 빈 30분이 하나라도 있는지 */
+export function hasFreeStep(date: string, blocks: DayBlock[]): boolean {
+  for (let m = OPEN_FROM; m < OPEN_TO; m += STEP_MIN) {
+    if (!blockingKind(stamp(date, minToTime(m)), stamp(date, minToTime(m + STEP_MIN)), blocks)) return true;
+  }
+  return false;
 }

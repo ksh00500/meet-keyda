@@ -51,6 +51,17 @@ describe('가능 여부', () => {
     expect(dayState('2026-12-01', [], true)).toBe('free');
   });
 
+  it('기본 시간대가 모두 막혀도 빈 30분이 있으면 partial (직접 선택 가능)', () => {
+    const blocks = [
+      { start: '2026-12-01T11:30', end: '2026-12-01T14:00', kind: 'booked' as const },
+      { start: '2026-12-01T19:00', end: '2026-12-01T22:00', kind: 'busy' as const },
+    ];
+    expect(slotStatuses('2026-12-01', blocks).every((x) => !x.available)).toBe(true);
+    expect(dayState('2026-12-01', blocks, true)).toBe('partial');
+    const filled = [...blocks, { start: '2026-12-01T09:00', end: '2026-12-01T11:30', kind: 'busy' as const }, { start: '2026-12-01T14:00', end: '2026-12-01T19:00', kind: 'busy' as const }];
+    expect(dayState('2026-12-01', filled, true)).toBe('full');
+  });
+
   it('busy가 booked보다 이유로 우선', () => {
     const blocks = [
       { start: '2026-12-01T12:00', end: '2026-12-01T13:00', kind: 'booked' as const },

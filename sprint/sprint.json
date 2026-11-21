@@ -78,6 +78,16 @@
           "stage": "blueprint"
         }
       ]
+    },
+    "L4": {
+      "saves": [
+        {
+          "sha256": "78042a66facb4383c9a3adf38fe7bd0abcfc950bdfdc358d122925c060d02fad",
+          "saved_at": "2026-11-21T06:17:01+00:00",
+          "note": "개발 완료 기록, 배포 전",
+          "stage": "build"
+        }
+      ]
     }
   },
   "checkpoints": [
@@ -111,11 +121,21 @@
       "id": "T01",
       "title": "T01 뼈대·Docker·첫 배포 준비",
       "must": true,
-      "status": "todo",
+      "status": "done",
       "history": [
         {
           "status": "todo",
           "at": "2026-11-21T06:01:30+00:00"
+        },
+        {
+          "status": "doing",
+          "note": null,
+          "at": "2026-11-21T06:07:42+00:00"
+        },
+        {
+          "status": "done",
+          "note": "compose 설정 검증(docker compose config), 앱을 node:22-bookworm-slim 컨테이너에서 실행해 /api/health·/mcp initialize 응답 확인. 이미지 빌드(npm ci)는 이 작업 환경의 프록시 제한으로 실패해 서버에서 첫 빌드로 확인 필요",
+          "at": "2026-11-21T06:16:31+00:00"
         }
       ]
     },
@@ -123,11 +143,37 @@
       "id": "T02",
       "title": "T02 DB·겹침 규칙·시드·테스트",
       "must": true,
-      "status": "todo",
+      "status": "verified",
       "history": [
         {
           "status": "todo",
           "at": "2026-11-21T06:01:30+00:00"
+        },
+        {
+          "status": "verified",
+          "note": "npx vitest run",
+          "at": "2026-11-21T06:07:42+00:00"
+        },
+        {
+          "status": "verified",
+          "note": "npx vitest run (33개)",
+          "at": "2026-11-21T06:16:31+00:00"
+        }
+      ],
+      "evidence": [
+        {
+          "command": "npx vitest run",
+          "exit_code": 0,
+          "at": "2026-11-21T06:07:42+00:00",
+          "log": "logs/test-backend.log",
+          "log_sha256": "9cb676047786877a4d8298e0687a50774292301e623882736286d0deda714fba"
+        },
+        {
+          "command": "npx vitest run (33개)",
+          "exit_code": 0,
+          "at": "2026-11-21T06:16:31+00:00",
+          "log": "logs/test-all.log",
+          "log_sha256": "377d956d31974f367aafb2e5436cd844669ff1488654bbb77e6fe8e495db15a8"
         }
       ]
     },
@@ -135,11 +181,25 @@
       "id": "T03",
       "title": "T03 F01 월간 캘린더",
       "must": true,
-      "status": "todo",
+      "status": "verified",
       "history": [
         {
           "status": "todo",
           "at": "2026-11-21T06:01:30+00:00"
+        },
+        {
+          "status": "verified",
+          "note": "node shots.cjs (Playwright: 캘린더→날짜→직접 선택 겹침→신청→내 신청→주인 화면, 데스크톱·아이폰13)",
+          "at": "2026-11-21T06:16:31+00:00"
+        }
+      ],
+      "evidence": [
+        {
+          "command": "node shots.cjs (Playwright: 캘린더→날짜→직접 선택 겹침→신청→내 신청→주인 화면, 데스크톱·아이폰13)",
+          "exit_code": 0,
+          "at": "2026-11-21T06:16:31+00:00",
+          "log": "logs/e2e-walkthrough.log",
+          "log_sha256": "59e6b7d8e649037e5a87800127ff5dadde28eb03692c496b819997143bb027b1"
         }
       ]
     },
@@ -147,11 +207,25 @@
       "id": "T04",
       "title": "T04 F02·F03 날짜 상세·버튼6·직접 선택",
       "must": true,
-      "status": "todo",
+      "status": "verified",
       "history": [
         {
           "status": "todo",
           "at": "2026-11-21T06:01:30+00:00"
+        },
+        {
+          "status": "verified",
+          "note": "node shots.cjs (Playwright: 캘린더→날짜→직접 선택 겹침→신청→내 신청→주인 화면, 데스크톱·아이폰13)",
+          "at": "2026-11-21T06:16:31+00:00"
+        }
+      ],
+      "evidence": [
+        {
+          "command": "node shots.cjs (Playwright: 캘린더→날짜→직접 선택 겹침→신청→내 신청→주인 화면, 데스크톱·아이폰13)",
+          "exit_code": 0,
+          "at": "2026-11-21T06:16:31+00:00",
+          "log": "logs/e2e-walkthrough.log",
+          "log_sha256": "59e6b7d8e649037e5a87800127ff5dadde28eb03692c496b819997143bb027b1"
         }
       ]
     },
@@ -159,11 +233,25 @@
       "id": "T05",
       "title": "T05 F04·F05·F07 신청 저장·동시 신청·정보 걸러내기",
       "must": true,
-      "status": "todo",
+      "status": "verified",
       "history": [
         {
           "status": "todo",
           "at": "2026-11-21T06:01:30+00:00"
+        },
+        {
+          "status": "verified",
+          "note": "node shots.cjs (Playwright: 캘린더→날짜→직접 선택 겹침→신청→내 신청→주인 화면, 데스크톱·아이폰13)",
+          "at": "2026-11-21T06:16:31+00:00"
+        }
+      ],
+      "evidence": [
+        {
+          "command": "node shots.cjs (Playwright: 캘린더→날짜→직접 선택 겹침→신청→내 신청→주인 화면, 데스크톱·아이폰13)",
+          "exit_code": 0,
+          "at": "2026-11-21T06:16:31+00:00",
+          "log": "logs/e2e-walkthrough.log",
+          "log_sha256": "59e6b7d8e649037e5a87800127ff5dadde28eb03692c496b819997143bb027b1"
         }
       ]
     },
@@ -171,11 +259,25 @@
       "id": "T06",
       "title": "T06 F06·F14 내 신청·이름+PIN·취소",
       "must": true,
-      "status": "todo",
+      "status": "verified",
       "history": [
         {
           "status": "todo",
           "at": "2026-11-21T06:01:30+00:00"
+        },
+        {
+          "status": "verified",
+          "note": "node flow2.cjs (Playwright: 신청→주인 수락→다른 기기 이름+PIN 조회→틀린 PIN→친구 취소)",
+          "at": "2026-11-21T06:16:31+00:00"
+        }
+      ],
+      "evidence": [
+        {
+          "command": "node flow2.cjs (Playwright: 신청→주인 수락→다른 기기 이름+PIN 조회→틀린 PIN→친구 취소)",
+          "exit_code": 0,
+          "at": "2026-11-21T06:16:31+00:00",
+          "log": "logs/e2e-flow2.log",
+          "log_sha256": "c892d02df344bc52abc597e8ff0716e968439ecfbc2b29786be3be46e7e8ef86"
         }
       ]
     },
@@ -183,11 +285,25 @@
       "id": "T07",
       "title": "T07 F08·F09 주인 화면",
       "must": true,
-      "status": "todo",
+      "status": "verified",
       "history": [
         {
           "status": "todo",
           "at": "2026-11-21T06:01:30+00:00"
+        },
+        {
+          "status": "verified",
+          "note": "node flow2.cjs (Playwright: 신청→주인 수락→다른 기기 이름+PIN 조회→틀린 PIN→친구 취소)",
+          "at": "2026-11-21T06:16:31+00:00"
+        }
+      ],
+      "evidence": [
+        {
+          "command": "node flow2.cjs (Playwright: 신청→주인 수락→다른 기기 이름+PIN 조회→틀린 PIN→친구 취소)",
+          "exit_code": 0,
+          "at": "2026-11-21T06:16:31+00:00",
+          "log": "logs/e2e-flow2.log",
+          "log_sha256": "c892d02df344bc52abc597e8ff0716e968439ecfbc2b29786be3be46e7e8ef86"
         }
       ]
     },
@@ -195,11 +311,37 @@
       "id": "T08",
       "title": "T08 F10-F13 MCP 서버·Bearer 인증",
       "must": true,
-      "status": "todo",
+      "status": "verified",
       "history": [
         {
           "status": "todo",
           "at": "2026-11-21T06:01:30+00:00"
+        },
+        {
+          "status": "verified",
+          "note": "npx vitest run",
+          "at": "2026-11-21T06:07:42+00:00"
+        },
+        {
+          "status": "verified",
+          "note": "npx vitest run (33개)",
+          "at": "2026-11-21T06:16:31+00:00"
+        }
+      ],
+      "evidence": [
+        {
+          "command": "npx vitest run",
+          "exit_code": 0,
+          "at": "2026-11-21T06:07:42+00:00",
+          "log": "logs/test-backend.log",
+          "log_sha256": "9cb676047786877a4d8298e0687a50774292301e623882736286d0deda714fba"
+        },
+        {
+          "command": "npx vitest run (33개)",
+          "exit_code": 0,
+          "at": "2026-11-21T06:16:31+00:00",
+          "log": "logs/test-all.log",
+          "log_sha256": "377d956d31974f367aafb2e5436cd844669ff1488654bbb77e6fe8e495db15a8"
         }
       ]
     },
@@ -207,11 +349,37 @@
       "id": "T09",
       "title": "T09 F16·F17 반복 일정·확정 취소",
       "must": true,
-      "status": "todo",
+      "status": "verified",
       "history": [
         {
           "status": "todo",
           "at": "2026-11-21T06:01:30+00:00"
+        },
+        {
+          "status": "verified",
+          "note": "npx vitest run",
+          "at": "2026-11-21T06:07:42+00:00"
+        },
+        {
+          "status": "verified",
+          "note": "npx vitest run (33개)",
+          "at": "2026-11-21T06:16:31+00:00"
+        }
+      ],
+      "evidence": [
+        {
+          "command": "npx vitest run",
+          "exit_code": 0,
+          "at": "2026-11-21T06:07:42+00:00",
+          "log": "logs/test-backend.log",
+          "log_sha256": "9cb676047786877a4d8298e0687a50774292301e623882736286d0deda714fba"
+        },
+        {
+          "command": "npx vitest run (33개)",
+          "exit_code": 0,
+          "at": "2026-11-21T06:16:31+00:00",
+          "log": "logs/test-all.log",
+          "log_sha256": "377d956d31974f367aafb2e5436cd844669ff1488654bbb77e6fe8e495db15a8"
         }
       ]
     },
@@ -219,11 +387,16 @@
       "id": "T10",
       "title": "T10 디자인 다듬기·AI티 점검",
       "must": true,
-      "status": "todo",
+      "status": "done",
       "history": [
         {
           "status": "todo",
           "at": "2026-11-21T06:01:30+00:00"
+        },
+        {
+          "status": "done",
+          "note": "스크린샷으로 AI티 5가지 점검(그라데이션·카드 3열·이모지·뻔한 문구·가짜 숫자 없음), 아이폰13 가로 넘침 없음",
+          "at": "2026-11-21T06:16:31+00:00"
         }
       ]
     }
@@ -260,5 +433,5 @@
       "at": "2026-11-21T06:00:36+00:00"
     }
   ],
-  "updated_at": "2026-11-21T06:01:30+00:00"
+  "updated_at": "2026-11-21T06:17:01+00:00"
 }

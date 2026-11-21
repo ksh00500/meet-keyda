@@ -1,0 +1,9 @@
+
+ RUN  v5.1.1 /home/user/meet-keyda
+
+
+ Test Files  4 passed (4)
+      Tests  32 passed (32)
+   Start at  06:07:40
+   Duration  1.57s (tests 64%, import 31%, transform 4%, worker 1%)
+
