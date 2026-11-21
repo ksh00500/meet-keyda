@@ -1,0 +1,29 @@
+# 개인 서버에서: cp .env.example .env 로 값을 채운 뒤
+#   docker compose up -d --build
+# 업데이트:  git pull && docker compose up -d --build
+services:
+  app:
+    build: .
+    restart: unless-stopped
+    environment:
+      OWNER_KEY: ${OWNER_KEY:?OWNER_KEY를 .env에 넣어 주세요}
+      SITE_TITLE: ${SITE_TITLE:-시호와 약속 잡기}
+      SEED_DEMO: ${SEED_DEMO:-}
+    volumes:
+      - meet-data:/data
+    # 서버 안에서만 확인용으로 열어 둠 (바깥 인터넷에는 열리지 않음)
+    ports:
+      - "127.0.0.1:3000:3000"
+
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    restart: unless-stopped
+    command: tunnel --no-autoupdate run
+    environment:
+      TUNNEL_TOKEN: ${TUNNEL_TOKEN:?TUNNEL_TOKEN을 .env에 넣어 주세요}
+    depends_on:
+      app:
+        condition: service_healthy
+
+volumes:
+  meet-data:

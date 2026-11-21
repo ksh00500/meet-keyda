@@ -1,0 +1,264 @@
+{
+  "schema": "workflo-lite/1",
+  "title": "약속 예약 캘린더",
+  "mode": "lite",
+  "stage": "build",
+  "started_at": "2026-11-21T05:34:44+00:00",
+  "stage_started_at": "2026-11-21T06:01:20+00:00",
+  "deadline": null,
+  "docs": {
+    "L1": {
+      "saves": [
+        {
+          "sha256": "380454202ee8c44e951c8ba44aa5bc1200ee0474dc27185df78b85ac4c0c9a2e",
+          "saved_at": "2026-11-21T05:35:15+00:00",
+          "note": "첫 초안: 개인용 예약 캘린더 + MCP",
+          "stage": "pitch"
+        },
+        {
+          "sha256": "d8d6736b635877f56e3ef13cf32539559460145a3e5faf49cc41fd16eddcb819",
+          "saved_at": "2026-11-21T05:38:52+00:00",
+          "note": "사용자 결정 6개 반영",
+          "stage": "pitch"
+        },
+        {
+          "sha256": "daea7b8522726ee503ef68ef228c1945cf4065b382c4fcd13d3f79ce4e4d804e",
+          "saved_at": "2026-11-21T05:38:58+00:00",
+          "note": "요약 줄 보완",
+          "stage": "pitch"
+        },
+        {
+          "sha256": "0c71483ec2e8afad3b4142fe34f9e69889a7500763e0c2c37f513eb917404ad8",
+          "saved_at": "2026-11-21T05:47:35+00:00",
+          "note": "호스팅 결정: 개인 서버 + Cloudflare Tunnel",
+          "stage": "pitch"
+        },
+        {
+          "sha256": "695c8fa278ce604cd4e3256cff9c732df283379bcfda2a524410219f4a5bc2b4",
+          "saved_at": "2026-11-21T05:49:04+00:00",
+          "note": "서버 환경: 리눅스 Docker, 주소 후보 sc.keyda.site",
+          "stage": "pitch"
+        },
+        {
+          "sha256": "023c5ad31976c000fea2f11dbbb815379aa60f01297371d5a4e330421f8c71e4",
+          "saved_at": "2026-11-21T05:49:35+00:00",
+          "note": "주소 확정: meet.keyda.site",
+          "stage": "pitch"
+        }
+      ]
+    },
+    "L2": {
+      "saves": [
+        {
+          "sha256": "3ef0650d6d6530d3c2256eaed10a0ed20806a32a5b219e27e07ab000dfc3a359",
+          "saved_at": "2026-11-21T05:50:32+00:00",
+          "note": "첫 초안: 기능 17개, 겹침 규칙, MCP 도구",
+          "stage": "spec"
+        },
+        {
+          "sha256": "ae83d3a96862e8475038b39fe67ffb0eadcf645bb33b796f4423eaa270d30f7d",
+          "saved_at": "2026-11-21T05:52:14+00:00",
+          "note": "결정 반영: 기간 90일, 당일 막음, Should 3개, 친구 PIN",
+          "stage": "spec"
+        }
+      ]
+    },
+    "L3": {
+      "saves": [
+        {
+          "sha256": "03904d1226702f5d06f6ff0ce3907a668c81770b1e415d06cf10298fd308baa1",
+          "saved_at": "2026-11-21T05:54:10+00:00",
+          "note": "첫 초안: Node+Hono+React+SQLite, Docker 2컨테이너, TASK 10개",
+          "stage": "blueprint"
+        },
+        {
+          "sha256": "d84bc3190d696455a41c4c9292ee2ff892dcf161b98576eefe51588606a379b2",
+          "saved_at": "2026-11-21T06:00:36+00:00",
+          "note": "결정 반영: 저장소, 제목, 차례 진행, 색 팔레트",
+          "stage": "blueprint"
+        }
+      ]
+    }
+  },
+  "checkpoints": [
+    {
+      "stage": "pitch",
+      "docs": {
+        "L1": "023c5ad31976c000fea2f11dbbb815379aa60f01297371d5a4e330421f8c71e4"
+      },
+      "user_utterance": "meet으로 가자 그 다음",
+      "at": "2026-11-21T05:49:35+00:00"
+    },
+    {
+      "stage": "spec",
+      "docs": {
+        "L2": "ae83d3a96862e8475038b39fe67ffb0eadcf645bb33b796f4423eaa270d30f7d"
+      },
+      "user_utterance": "다음",
+      "at": "2026-11-21T05:52:36+00:00"
+    },
+    {
+      "stage": "blueprint",
+      "docs": {
+        "L3": "d84bc3190d696455a41c4c9292ee2ff892dcf161b98576eefe51588606a379b2"
+      },
+      "user_utterance": "다음",
+      "at": "2026-11-21T06:01:20+00:00"
+    }
+  ],
+  "tasks": [
+    {
+      "id": "T01",
+      "title": "T01 뼈대·Docker·첫 배포 준비",
+      "must": true,
+      "status": "todo",
+      "history": [
+        {
+          "status": "todo",
+          "at": "2026-11-21T06:01:30+00:00"
+        }
+      ]
+    },
+    {
+      "id": "T02",
+      "title": "T02 DB·겹침 규칙·시드·테스트",
+      "must": true,
+      "status": "todo",
+      "history": [
+        {
+          "status": "todo",
+          "at": "2026-11-21T06:01:30+00:00"
+        }
+      ]
+    },
+    {
+      "id": "T03",
+      "title": "T03 F01 월간 캘린더",
+      "must": true,
+      "status": "todo",
+      "history": [
+        {
+          "status": "todo",
+          "at": "2026-11-21T06:01:30+00:00"
+        }
+      ]
+    },
+    {
+      "id": "T04",
+      "title": "T04 F02·F03 날짜 상세·버튼6·직접 선택",
+      "must": true,
+      "status": "todo",
+      "history": [
+        {
+          "status": "todo",
+          "at": "2026-11-21T06:01:30+00:00"
+        }
+      ]
+    },
+    {
+      "id": "T05",
+      "title": "T05 F04·F05·F07 신청 저장·동시 신청·정보 걸러내기",
+      "must": true,
+      "status": "todo",
+      "history": [
+        {
+          "status": "todo",
+          "at": "2026-11-21T06:01:30+00:00"
+        }
+      ]
+    },
+    {
+      "id": "T06",
+      "title": "T06 F06·F14 내 신청·이름+PIN·취소",
+      "must": true,
+      "status": "todo",
+      "history": [
+        {
+          "status": "todo",
+          "at": "2026-11-21T06:01:30+00:00"
+        }
+      ]
+    },
+    {
+      "id": "T07",
+      "title": "T07 F08·F09 주인 화면",
+      "must": true,
+      "status": "todo",
+      "history": [
+        {
+          "status": "todo",
+          "at": "2026-11-21T06:01:30+00:00"
+        }
+      ]
+    },
+    {
+      "id": "T08",
+      "title": "T08 F10-F13 MCP 서버·Bearer 인증",
+      "must": true,
+      "status": "todo",
+      "history": [
+        {
+          "status": "todo",
+          "at": "2026-11-21T06:01:30+00:00"
+        }
+      ]
+    },
+    {
+      "id": "T09",
+      "title": "T09 F16·F17 반복 일정·확정 취소",
+      "must": true,
+      "status": "todo",
+      "history": [
+        {
+          "status": "todo",
+          "at": "2026-11-21T06:01:30+00:00"
+        }
+      ]
+    },
+    {
+      "id": "T10",
+      "title": "T10 디자인 다듬기·AI티 점검",
+      "must": true,
+      "status": "todo",
+      "history": [
+        {
+          "status": "todo",
+          "at": "2026-11-21T06:01:30+00:00"
+        }
+      ]
+    }
+  ],
+  "cuts": [
+    {
+      "item": "구글 캘린더 자동 동기화",
+      "reason": "MCP로 AI가 대신 등록, 이후 할 일",
+      "at": "2026-11-21T05:35:15+00:00"
+    },
+    {
+      "item": "이메일·카톡 알림",
+      "reason": "AI 질의와 주인 화면으로 대신",
+      "at": "2026-11-21T05:35:15+00:00"
+    },
+    {
+      "item": "F15 주인 화면 불가능 시간 직접 추가",
+      "reason": "Grok(MCP)으로 대신, 나중에",
+      "at": "2026-11-21T05:52:14+00:00"
+    },
+    {
+      "item": "새 신청 메신저 즉시 알림",
+      "reason": "Grok 질의와 주인 화면 건수 표시로 대신",
+      "at": "2026-11-21T05:52:14+00:00"
+    }
+  ],
+  "tools": [
+    {
+      "name": "병렬 서브에이전트",
+      "purpose": "그룹 A/B/C 동시 개발",
+      "status": "declined",
+      "required": false,
+      "stage": "blueprint",
+      "at": "2026-11-21T06:00:36+00:00"
+    }
+  ],
+  "updated_at": "2026-11-21T06:01:30+00:00"
+}
