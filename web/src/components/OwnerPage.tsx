@@ -2,7 +2,7 @@ import { ArrowLeft, LogOut, Trash2 } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import { navigate } from '../App.js';
 import { ApiError, api, local, type BookingStatus, type Busy, type Config, type OwnerBooking } from '../api.js';
-import { STATUS_LABEL, dateLabel, slotLabel, timeRange, whenLabel } from '../format.js';
+import { STATUS_LABEL, slotLabel, whenLabel, whenParts } from '../format.js';
 
 type Tab = 'pending' | 'confirmed' | 'done';
 const TABS: { id: Tab; label: string }[] = [
@@ -182,9 +182,10 @@ export function OwnerPage({ config }: { config: Config }) {
               <li key={b.id} className={`booking booking--${b.status}`}>
                 <div className="booking__main">
                   <span className={`badge badge--${b.status}`}>{STATUS_LABEL[b.status]}</span>
-                  <p className="booking__when">{whenLabel(b.start, b.end)}</p>
+                  <p className="booking__when">{whenParts(b.start, b.end).date}</p>
+                  <p className="booking__time">{whenParts(b.start, b.end).time}</p>
                   <p className="booking__who">
-                    <strong>{b.name}</strong> · {slotLabel(b.slot)}
+                    <strong>{b.name}</strong> <span className="slot-tag">{slotLabel(b.slot)}</span>
                   </p>
                   {b.memo && <p className="booking__memo">{b.memo}</p>}
                   {b.reason && <p className="booking__reason">사유: {b.reason}</p>}
@@ -219,9 +220,8 @@ export function OwnerPage({ config }: { config: Config }) {
             {(busyList ?? []).map((z) => (
               <li key={z.id}>
                 <div>
-                  <p className="busy__when">
-                    {dateLabel(z.start.slice(0, 10))} · {timeRange(z.start, z.end)}
-                  </p>
+                  <p className="busy__when">{whenParts(z.start, z.end).date}</p>
+                  <p className="busy__time">{whenParts(z.start, z.end).time}</p>
                   <p className="busy__title">
                     {z.title || '제목 없음'}
                     {z.seriesId && <span className="badge badge--series">반복</span>}
@@ -246,7 +246,7 @@ export function OwnerPage({ config }: { config: Config }) {
               MCP 주소: <code>{`${window.location.origin}/mcp`}</code>
             </p>
             <p>인증: Bearer 토큰 = 이 화면에 넣은 비밀 키</p>
-            <p className="muted">{config.title} · 신청 가능 기간 {config.bookableFrom} ~ {config.bookableTo}</p>
+            <p className="muted">신청 가능 기간: {config.bookableFrom} ~ {config.bookableTo}</p>
           </details>
         </section>
       </div>

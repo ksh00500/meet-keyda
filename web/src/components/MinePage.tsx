@@ -2,7 +2,7 @@ import { ArrowLeft } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import { navigate } from '../App.js';
 import { ApiError, api, local, type Config, type FriendBooking } from '../api.js';
-import { STATUS_LABEL, slotLabel, whenLabel } from '../format.js';
+import { STATUS_LABEL, slotLabel, whenLabel, whenParts } from '../format.js';
 
 export function MinePage({ config }: { config: Config }) {
   const [list, setList] = useState<FriendBooking[] | null>(null);
@@ -75,7 +75,12 @@ export function MinePage({ config }: { config: Config }) {
       )}
 
       {list && upcoming.length === 0 && past.length === 0 && (
-        <p className="empty">아직 이 기기에서 신청한 약속이 없어요.</p>
+        <p className="empty">
+          아직 이 기기에서 신청한 약속이 없어요.{' '}
+          <button className="link-btn link-btn--inline" onClick={() => navigate('/')}>
+            캘린더에서 날짜 고르기
+          </button>
+        </p>
       )}
 
       <ul className="bookings">
@@ -83,7 +88,8 @@ export function MinePage({ config }: { config: Config }) {
           <li key={b.id} className={`booking booking--${b.status}`}>
             <div className="booking__main">
               <span className={`badge badge--${b.status}`}>{STATUS_LABEL[b.status]}</span>
-              <p className="booking__when">{whenLabel(b.start, b.end)}</p>
+              <p className="booking__when">{whenParts(b.start, b.end).date}</p>
+                  <p className="booking__time">{whenParts(b.start, b.end).time}</p>
               <p className="booking__slot">{slotLabel(b.slot)}</p>
               {b.reason && <p className="booking__reason">“{b.reason}”</p>}
             </div>

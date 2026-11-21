@@ -1,7 +1,7 @@
-import { CheckCircle2, Clock, X } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, Clock, X } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { blockingKind, slotStatuses } from '../../../server/domain/availability.js';
-import { STEP_MIN, minToTime, slotRange, type SlotKind } from '../../../server/domain/time.js';
+import { STEP_MIN, minToTime, slotRange, timeToMin, type SlotKind } from '../../../server/domain/time.js';
 import { navigate } from '../App.js';
 import { ApiError, api, local, type CalendarDay, type Config, type FriendBooking } from '../api.js';
 import { dateLabel, slotLabel, timeRange } from '../format.js';
@@ -9,6 +9,8 @@ import { Timeline } from './Timeline.js';
 
 const TIMES = Array.from({ length: (24 * 60) / STEP_MIN + 1 }, (_, i) => minToTime(i * STEP_MIN));
 const REASON = { busy: '불가', booked: '예약됨' } as const;
+
+type Step = 'time' | 'info' | 'done';
 
 interface Props {
   config: Config;
@@ -18,6 +20,7 @@ interface Props {
 }
 
 export function DayPanel({ config, day, onClose, onBooked }: Props) {
+  const [step, setStep] = useState<Step>('time');
   const [choice, setChoice] = useState<SlotKind | null>(null);
   const [customStart, setCustomStart] = useState('15:00');
   const [customEnd, setCustomEnd] = useState('17:00');
@@ -27,8 +30,8 @@ export function DayPanel({ config, day, onClose, onBooked }: Props) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState<FriendBooking | null>(null);
-  const formRef = useRef<HTMLFormElement>(null);
   const panelRef = useRef<HTMLElement>(null);
+  const nameRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     panelRef.current?.focus();
@@ -37,9 +40,13 @@ export function DayPanel({ config, day, onClose, onBooked }: Props) {
     return () => window.removeEventListener('keydown', onKey);
   }, [onClose]);
 
+  useEffect(() => {
+    panelRef.current?.scrollTo({ top: 0 });
+    if (step === 'info') nameRef.current?.focus();
+  }, [step]);
+
   const statuses = useMemo(() => slotStatuses(day.date, day.blocks), [day]);
 
-  // 고른 시간과 그 시간이 막혔는지
   const selection = useMemo(() => {
     if (!choice) return null;
     const r = slotRange(day.date, choice, customStart, customEnd);
@@ -51,17 +58,18 @@ export function DayPanel({ config, day, onClose, onBooked }: Props) {
     };
   }, [choice, customStart, customEnd, day]);
 
-  const pick = (slot: SlotKind) => {
-    setChoice(slot);
-    setError(null);
-    requestAnimationFrame(() => formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' }));
+  const timeOk = !!selection?.range && !selection.problem;
+  const infoOk = name.trim() !== '' && /^\d{4}$/.test(pin);
+
+  // 시작을 바꾸면 끝이 시작보다 앞이 되지 않게 맞춘다
+  const changeStart = (v: string) => {
+    setCustomStart(v);
+    if (timeToMin(customEnd) <= timeToMin(v)) setCustomEnd(minToTime(Math.min(timeToMin(v) + 60, 24 * 60)));
   };
 
-  const canSubmit = !!selection?.range && !selection.problem && name.trim() !== '' && /^\d{4}$/.test(pin) && !busy;
-
-  async function submit(e: React.FormEvent) {
-    e.preventDefault();
-    if (!canSubmit || !choice) return;
+  async function submit(e?: React.FormEvent) {
+    e?.preventDefault();
+    if (!timeOk || !infoOk || !choice || busy) return;
     setBusy(true);
     setError(null);
     try {
@@ -75,47 +83,83 @@ export function DayPanel({ config, day, onClose, onBooked }: Props) {
       });
       local.addTokens([r.token]);
       setDone(r);
+      setStep('done');
       onBooked();
     } catch (err) {
       setError(err instanceof ApiError ? err.message : '잠시 후 다시 시도해 주세요');
-      if (err instanceof ApiError && err.code === 'conflict') onBooked();
+      if (err instanceof ApiError && err.code === 'conflict') {
+        onBooked();
+        setStep('time');
+      }
     } finally {
       setBusy(false);
     }
   }
 
   const noneAvailable = statuses.every((s) => !s.available);
+  const chosenLabel = selection?.range ? `${slotLabel(choice!)} ${timeRange(selection.range.start, selection.range.end)}` : '';
 
   return (
     <>
       <div className="scrim" onClick={onClose} aria-hidden />
       <aside className="panel" role="dialog" aria-modal="true" aria-labelledby="panel-title" tabIndex={-1} ref={panelRef}>
+        <div className="panel__grip" aria-hidden />
         <div className="panel__head">
-          <h2 id="panel-title">{dateLabel(day.date)}</h2>
+          {step === 'info' ? (
+            <button className="icon-btn" onClick={() => setStep('time')} aria-label="시간 다시 고르기">
+              <ArrowLeft size={22} />
+            </button>
+          ) : (
+            <span className="panel__spacer" />
+          )}
+          <div className="panel__title">
+            <h2 id="panel-title">{dateLabel(day.date)}</h2>
+            {step !== 'done' && (
+              <p className="steps" aria-label={`${step === 'time' ? 1 : 2}단계 / 2단계`}>
+                <span className={step === 'time' ? 'steps__on' : ''}>시간</span>
+                <span className={step === 'info' ? 'steps__on' : ''}>이름·PIN</span>
+              </p>
+            )}
+          </div>
           <button className="icon-btn" onClick={onClose} aria-label="닫기">
             <X size={22} />
           </button>
         </div>
 
-        {done ? (
+        {step === 'done' && done && (
           <div className="done">
-            <CheckCircle2 size={40} className="done__icon" aria-hidden />
+            <CheckCircle2 size={44} className="done__icon" aria-hidden />
             <h3>신청했어요</h3>
-            <p className="done__when">
-              {dateLabel(day.date)} · {slotLabel(done.slot)} {timeRange(done.start, done.end)}
+            <dl className="done__summary">
+              <dt>날짜</dt>
+              <dd>{dateLabel(day.date)}</dd>
+              <dt>시간</dt>
+              <dd>
+                {slotLabel(done.slot)} {timeRange(done.start, done.end)}
+              </dd>
+              <dt>이름</dt>
+              <dd>{name.trim()}</dd>
+            </dl>
+            <p className="muted">
+              지금은 <strong className="pending-word">신청 중</strong>이에요. 확정되면 "내 신청"에서 바뀐 걸 볼 수 있어요.
             </p>
-            <p className="muted">확인되면 "내 신청"에서 확정으로 바뀌어요. 다른 기기에서는 이름과 PIN으로 찾을 수 있어요.</p>
-            <div className="row">
-              <button className="btn btn--primary" onClick={() => navigate('/mine')}>내 신청 보기</button>
-              <button className="btn" onClick={onClose}>캘린더로</button>
+            <p className="muted">다른 휴대폰에서도 이름과 PIN으로 찾을 수 있으니 PIN을 기억해 두세요.</p>
+            <div className="sheet-actions">
+              <button className="btn btn--primary btn--block" onClick={() => navigate('/mine')}>
+                내 신청 보기
+              </button>
+              <button className="btn btn--ghost btn--block" onClick={onClose}>
+                캘린더로 돌아가기
+              </button>
             </div>
           </div>
-        ) : (
+        )}
+
+        {step === 'time' && (
           <>
             <Timeline date={day.date} blocks={day.blocks} selection={selection?.range ?? null} />
 
-            <h3 className="section-title">언제 볼까요?</h3>
-            {noneAvailable && <p className="muted">기본 시간대는 모두 찼어요. 직접 선택으로 빈 시간을 골라 보세요.</p>}
+            {noneAvailable && <p className="hint">기본 시간대는 다 찼어요. 직접 선택으로 빈 시간을 골라 보세요.</p>}
             <div className="chips" role="radiogroup" aria-label="시간대">
               {config.slots.map((s) => {
                 const st = statuses.find((x) => x.id === s.id)!;
@@ -126,7 +170,10 @@ export function DayPanel({ config, day, onClose, onBooked }: Props) {
                     aria-checked={choice === s.id}
                     className={`chip${choice === s.id ? ' chip--on' : ''}`}
                     disabled={!st.available}
-                    onClick={() => pick(s.id)}
+                    onClick={() => {
+                      setChoice(s.id);
+                      setError(null);
+                    }}
                   >
                     <span className="chip__label">{s.label}</span>
                     <span className="chip__time">{st.available ? `${s.start}–${s.end}` : REASON[st.reason!]}</span>
@@ -137,10 +184,13 @@ export function DayPanel({ config, day, onClose, onBooked }: Props) {
                 role="radio"
                 aria-checked={choice === 'custom'}
                 className={`chip chip--custom${choice === 'custom' ? ' chip--on' : ''}`}
-                onClick={() => pick('custom')}
+                onClick={() => {
+                  setChoice('custom');
+                  setError(null);
+                }}
               >
                 <span className="chip__label">
-                  <Clock size={15} aria-hidden /> 직접 선택
+                  <Clock size={16} aria-hidden /> 직접 선택
                 </span>
                 <span className="chip__time">30분 단위</span>
               </button>
@@ -150,9 +200,11 @@ export function DayPanel({ config, day, onClose, onBooked }: Props) {
               <div className="custom">
                 <label>
                   시작
-                  <select value={customStart} onChange={(e) => setCustomStart(e.target.value)}>
+                  <select value={customStart} onChange={(e) => changeStart(e.target.value)}>
                     {TIMES.slice(0, -1).map((t) => (
-                      <option key={t} value={t}>{t}</option>
+                      <option key={t} value={t}>
+                        {t}
+                      </option>
                     ))}
                   </select>
                 </label>
@@ -160,62 +212,90 @@ export function DayPanel({ config, day, onClose, onBooked }: Props) {
                 <label>
                   끝
                   <select value={customEnd} onChange={(e) => setCustomEnd(e.target.value)}>
-                    {TIMES.slice(1).map((t) => (
-                      <option key={t} value={t}>{t}</option>
+                    {TIMES.filter((t) => timeToMin(t) > timeToMin(customStart)).map((t) => (
+                      <option key={t} value={t}>
+                        {t}
+                      </option>
                     ))}
                   </select>
                 </label>
               </div>
             )}
             {selection?.problem && (
-              <p className="field-error" role="status">{selection.problem}</p>
+              <p className="field-error" role="status">
+                {selection.problem}
+              </p>
+            )}
+            {error && (
+              <p className="field-error" role="alert">
+                {error}
+              </p>
             )}
 
-            {choice && (
-              <form className="form" ref={formRef} onSubmit={submit}>
-                <label className="field">
-                  <span>이름</span>
-                  <input
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    maxLength={20}
-                    autoComplete="nickname"
-                    placeholder="누군지 알 수 있는 이름"
-                    required
-                  />
-                </label>
-                <label className="field">
-                  <span>PIN 4자리</span>
-                  <input
-                    value={pin}
-                    onChange={(e) => setPin(e.target.value.replace(/\D/g, '').slice(0, 4))}
-                    inputMode="numeric"
-                    autoComplete="off"
-                    placeholder="0000"
-                    pattern="\d{4}"
-                    required
-                  />
-                  <small>다른 기기에서 내 신청을 찾거나 취소할 때 써요</small>
-                </label>
-                <label className="field">
-                  <span>메모 <em>(선택)</em></span>
-                  <textarea
-                    value={memo}
-                    onChange={(e) => setMemo(e.target.value)}
-                    maxLength={200}
-                    rows={2}
-                    placeholder="예: 회사 근처 파스타 어때"
-                  />
-                </label>
-                {error && (
-                  <p className="field-error" role="alert">{error}</p>
-                )}
-                <button className="btn btn--primary btn--block" disabled={!canSubmit}>
-                  {busy ? '신청하는 중…' : selection?.range ? `${timeRange(selection.range.start, selection.range.end)} 신청하기` : '신청하기'}
-                </button>
-              </form>
-            )}
+            <div className="sheet-cta">
+              <button className="btn btn--primary btn--block btn--tall" disabled={!timeOk} onClick={() => setStep('info')}>
+                {timeOk ? `${timeRange(selection!.range!.start, selection!.range!.end)}로 다음` : '시간을 골라 주세요'}
+              </button>
+            </div>
           </>
+        )}
+
+        {step === 'info' && (
+          <form className="form" onSubmit={submit}>
+            <button type="button" className="chosen" onClick={() => setStep('time')}>
+              <span className="chosen__label">고른 시간</span>
+              <span className="chosen__value">{chosenLabel}</span>
+              <span className="chosen__edit">바꾸기</span>
+            </button>
+            <label className="field">
+              <span>이름</span>
+              <input
+                ref={nameRef}
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                maxLength={20}
+                autoComplete="nickname"
+                placeholder="누군지 알 수 있는 이름"
+                required
+              />
+            </label>
+            <label className="field">
+              <span>PIN 4자리</span>
+              <input
+                className="pin-input"
+                value={pin}
+                onChange={(e) => setPin(e.target.value.replace(/\D/g, '').slice(0, 4))}
+                inputMode="numeric"
+                autoComplete="off"
+                placeholder="숫자 4자리"
+                pattern="\d{4}"
+                required
+              />
+              <small>다른 휴대폰에서 내 신청을 찾거나 취소할 때 써요</small>
+            </label>
+            <label className="field">
+              <span>
+                메모 <em>(선택)</em>
+              </span>
+              <textarea
+                value={memo}
+                onChange={(e) => setMemo(e.target.value)}
+                maxLength={200}
+                rows={2}
+                placeholder="예: 회사 근처 파스타 어때"
+              />
+            </label>
+            {error && (
+              <p className="field-error" role="alert">
+                {error}
+              </p>
+            )}
+            <div className="sheet-cta">
+              <button className="btn btn--primary btn--block btn--tall" disabled={!infoOk || busy}>
+                {busy ? '신청하는 중…' : '신청하기'}
+              </button>
+            </div>
+          </form>
         )}
       </aside>
     </>

@@ -98,6 +98,12 @@
           "saved_at": "2026-11-21T06:24:55+00:00",
           "note": "터널 방식 변경",
           "stage": "build"
+        },
+        {
+          "sha256": "eba87937a880e503d15a665f2bd07188961e5cdf087ec11e0c364e8463d0a475",
+          "saved_at": "2026-11-21T06:29:46+00:00",
+          "note": "디자인 고도화 기록",
+          "stage": "build"
         }
       ]
     }
@@ -411,6 +417,32 @@
           "at": "2026-11-21T06:16:31+00:00"
         }
       ]
+    },
+    {
+      "id": "T11",
+      "title": "T11 디자인 고도화 (레퍼런스 조사, docs/design.md, 2단계 시트)",
+      "must": true,
+      "status": "verified",
+      "history": [
+        {
+          "status": "todo",
+          "at": "2026-11-21T06:29:46+00:00"
+        },
+        {
+          "status": "verified",
+          "note": "node tests/e2e/shots.cjs && node tests/e2e/flow2.cjs (데스크톱·아이폰13)",
+          "at": "2026-11-21T06:29:46+00:00"
+        }
+      ],
+      "evidence": [
+        {
+          "command": "node tests/e2e/shots.cjs && node tests/e2e/flow2.cjs (데스크톱·아이폰13)",
+          "exit_code": 0,
+          "at": "2026-11-21T06:29:46+00:00",
+          "log": "logs/e2e-flow2.log",
+          "log_sha256": "c892d02df344bc52abc597e8ff0716e968439ecfbc2b29786be3be46e7e8ef86"
+        }
+      ]
     }
   ],
   "cuts": [
@@ -445,5 +477,5 @@
       "at": "2026-11-21T06:00:36+00:00"
     }
   ],
-  "updated_at": "2026-11-21T06:24:55+00:00"
+  "updated_at": "2026-11-21T06:29:46+00:00"
 }

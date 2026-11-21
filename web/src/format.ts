@@ -42,6 +42,13 @@ export function whenLabel(start: string, end: string): string {
   return t.includes(' – ') ? t : `${dateLabel(start.slice(0, 10))} · ${t}`;
 }
 
+/** 목록에서 날짜와 시간을 두 줄로 보여 줄 때 */
+export function whenParts(start: string, end: string): { date: string; time: string } {
+  const t = timeRange(start, end);
+  if (t.includes(' – ')) return { date: `${dateLabel(start.slice(0, 10))}부터`, time: `${dateLabel(end.slice(0, 10))} ${end.slice(11)}까지` };
+  return { date: dateLabel(start.slice(0, 10)), time: t };
+}
+
 export const slotLabel = (slot: SlotKind) => SLOT_LABEL[slot] ?? slot;
 
 export const STATUS_LABEL: Record<BookingStatus, string> = {

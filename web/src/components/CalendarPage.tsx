@@ -1,4 +1,4 @@
-import { ChevronLeft, ChevronRight, ListChecks } from 'lucide-react';
+import { ChevronLeft, ChevronRight, EyeOff, ListChecks } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import { addDays, weekday } from '../../../server/domain/time.js';
 import { navigate } from '../App.js';
@@ -18,6 +18,8 @@ export function CalendarPage({ config }: { config: Config }) {
   const [error, setError] = useState<string | null>(null);
   const [selected, setSelected] = useState<string | null>(null);
   const hasMine = local.tokens().length > 0;
+  // 이 기기에서 신청한 날짜 (신청 중·확정) → 캘린더에 레몬 점
+  const [mineDates, setMineDates] = useState<Map<string, 'pending' | 'confirmed'>>(new Map());
 
   const load = useCallback(() => {
     setError(null);
@@ -25,6 +27,22 @@ export function CalendarPage({ config }: { config: Config }) {
       .calendar(month)
       .then((r) => setDays(r.days))
       .catch((e: Error) => setError(e.message));
+    const tokens = local.tokens();
+    if (tokens.length > 0) {
+      api
+        .mine(tokens)
+        .then((r) => {
+          const m = new Map<string, 'pending' | 'confirmed'>();
+          for (const b of r.bookings) {
+            if (b.status === 'pending' || b.status === 'confirmed') {
+              const d = b.start.slice(0, 10);
+              if (m.get(d) !== 'confirmed') m.set(d, b.status);
+            }
+          }
+          setMineDates(m);
+        })
+        .catch(() => undefined);
+    }
   }, [month]);
 
   useEffect(() => {
@@ -44,6 +62,9 @@ export function CalendarPage({ config }: { config: Config }) {
         <header className="hero">
           <h1>{config.title}</h1>
           <p className="hero__sub">빈 날짜를 눌러 약속을 신청해 주세요. 확인되면 확정으로 바뀌어요.</p>
+          <p className="hero__privacy">
+            <EyeOff size={15} aria-hidden /> 일정 내용과 다른 사람 이름은 보이지 않아요
+          </p>
           <button className="link-btn" onClick={() => navigate('/mine')}>
             <ListChecks size={18} aria-hidden />
             {hasMine ? '내 신청 보기' : '내 신청 찾기'}
@@ -76,6 +97,7 @@ export function CalendarPage({ config }: { config: Config }) {
             <li><span className="swatch swatch--partial" />일부 가능</li>
             <li><span className="swatch swatch--full" />불가</li>
             <li><span className="swatch swatch--booked" />예약됨</li>
+            {mineDates.size > 0 && <li><span className="swatch swatch--mine" />내 신청</li>}
           </ul>
 
           <div className="grid grid--week" aria-hidden>
@@ -99,16 +121,22 @@ export function CalendarPage({ config }: { config: Config }) {
               {shown.map((d) => {
                 const n = Number(d.date.slice(8));
                 const disabled = d.state === 'closed' || d.state === 'full';
+                const mine = mineDates.get(d.date);
+                const isToday = d.date === config.today;
                 return (
                   <button
                     key={d.date}
-                    className={`day day--${d.state}${selected === d.date ? ' day--selected' : ''}${d.date === config.today ? ' day--today' : ''}`}
+                    className={`day day--${d.state}${selected === d.date ? ' day--selected' : ''}${isToday ? ' day--today' : ''}`}
                     disabled={disabled}
                     onClick={() => setSelected(d.date)}
-                    aria-label={`${Number(d.date.slice(5, 7))}월 ${n}일, ${STATE_LABEL[d.state]}`}
+                    aria-label={`${Number(d.date.slice(5, 7))}월 ${n}일, ${isToday ? '오늘, ' : ''}${STATE_LABEL[d.state]}${mine ? `, 내 신청 ${mine === 'confirmed' ? '확정' : '신청 중'}` : ''}`}
                     aria-pressed={selected === d.date}
                   >
-                    <span className="day__num">{n}</span>
+                    <span className="day__top">
+                      <span className="day__num">{n}</span>
+                      {mine && <span className={`day__mine day__mine--${mine}`} aria-hidden />}
+                    </span>
+                    {isToday && <span className="day__today">오늘</span>}
                     {d.state !== 'closed' && d.blocks.length > 0 && <Timeline date={d.date} blocks={d.blocks} compact />}
                     {d.state === 'full' && <span className="day__tag">불가</span>}
                   </button>
