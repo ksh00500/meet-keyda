@@ -1,11 +1,11 @@
 import { ChevronLeft, ChevronRight, EyeOff, ListChecks } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
+import { daySummary, periodStates } from '../../../server/domain/availability.js';
 import { addDays, weekday } from '../../../server/domain/time.js';
 import { navigate } from '../App.js';
 import { api, local, type CalendarDay, type Config } from '../api.js';
 import { monthLabel, shiftMonth } from '../format.js';
 import { DayPanel } from './DayPanel.js';
-import { Timeline } from './Timeline.js';
 
 const WEEK = ['일', '월', '화', '수', '목', '금', '토'];
 const STATE_LABEL = { free: '여유', partial: '일부 가능', full: '불가', closed: '신청 기간 아님' } as const;
@@ -92,13 +92,23 @@ export function CalendarPage({ config }: { config: Config }) {
             </button>
           </div>
 
-          <ul className="legend" aria-label="표시 안내">
-            <li><span className="swatch swatch--free" />여유</li>
-            <li><span className="swatch swatch--partial" />일부 가능</li>
-            <li><span className="swatch swatch--full" />불가</li>
-            <li><span className="swatch swatch--booked" />예약됨</li>
-            {mineDates.size > 0 && <li><span className="swatch swatch--mine" />내 신청</li>}
-          </ul>
+          <div className="legend" aria-label="표시 안내">
+            <span className="legend__sample" aria-hidden>
+              <i className="seg seg--free" />
+              <i className="seg seg--free" />
+              <i className="seg seg--free" />
+            </span>
+            <span className="legend__text">칸 아래 세 칸은 <b>오전 · 오후 · 저녁</b></span>
+            <span className="legend__keys">
+              <span><i className="seg seg--free" aria-hidden />가능</span>
+              <span><i className="seg seg--some" aria-hidden />일부 가능</span>
+              <span><i className="seg seg--busy" aria-hidden />불가</span>
+              <span><i className="seg seg--booked" aria-hidden />예약됨</span>
+              {mineDates.size > 0 && (
+                <span><i className="dot dot--pending" aria-hidden />내 신청</span>
+              )}
+            </span>
+          </div>
 
           <div className="grid grid--week" aria-hidden>
             {WEEK.map((w, i) => (
@@ -123,22 +133,33 @@ export function CalendarPage({ config }: { config: Config }) {
                 const disabled = d.state === 'closed' || d.state === 'full';
                 const mine = mineDates.get(d.date);
                 const isToday = d.date === config.today;
+                const periods = periodStates(d.date, d.blocks);
+                const summary = d.state === 'full' ? '불가' : daySummary(periods);
                 return (
                   <button
                     key={d.date}
                     className={`day day--${d.state}${selected === d.date ? ' day--selected' : ''}${isToday ? ' day--today' : ''}`}
                     disabled={disabled}
                     onClick={() => setSelected(d.date)}
-                    aria-label={`${Number(d.date.slice(5, 7))}월 ${n}일, ${isToday ? '오늘, ' : ''}${STATE_LABEL[d.state]}${mine ? `, 내 신청 ${mine === 'confirmed' ? '확정' : '신청 중'}` : ''}`}
+                    aria-label={`${Number(d.date.slice(5, 7))}월 ${n}일, ${isToday ? '오늘, ' : ''}${d.state === 'closed' ? STATE_LABEL.closed : summary}${mine ? `, 내 신청 ${mine === 'confirmed' ? '확정' : '신청 중'}` : ''}`}
                     aria-pressed={selected === d.date}
                   >
                     <span className="day__top">
                       <span className="day__num">{n}</span>
-                      {mine && <span className={`day__mine day__mine--${mine}`} aria-hidden />}
+                      {mine && <span className={`dot dot--${mine}`} aria-hidden />}
                     </span>
-                    {isToday && <span className="day__today">오늘</span>}
-                    {d.state !== 'closed' && d.blocks.length > 0 && <Timeline date={d.date} blocks={d.blocks} compact />}
-                    {d.state === 'full' && <span className="day__tag">불가</span>}
+                    {isToday ? (
+                      <span className="day__note day__note--today">오늘</span>
+                    ) : d.state !== 'closed' ? (
+                      <span className={`day__note${d.state === 'full' ? ' day__note--full' : ''}`}>{summary}</span>
+                    ) : null}
+                    {d.state !== 'closed' && (
+                      <span className="segs" aria-hidden>
+                        {periods.map((p, i) => (
+                          <i key={i} className={`seg seg--${p}`} />
+                        ))}
+                      </span>
+                    )}
                   </button>
                 );
               })}

@@ -1,5 +1,5 @@
 // 날짜별 가능 여부 판정. 서버(캘린더 상태)와 화면(버튼 비활성화)이 같은 규칙을 쓴다.
-import { SLOTS, STEP_MIN, type SlotId, clipToDay, minToTime, overlaps, stamp } from './time.js';
+import { SLOTS, STEP_MIN, type SlotId, clipToDay, minToTime, overlaps, stamp, timeToMin } from './time.js';
 
 /** 직접 선택으로라도 고를 빈 30분이 있는지 보는 시간 범위 (종일 시간대와 같음) */
 const OPEN_FROM = 9 * 60;
@@ -54,3 +54,41 @@ export function hasFreeStep(date: string, blocks: DayBlock[]): boolean {
   }
   return false;
 }
+
+/** 캘린더 칸에 보여 줄 하루 세 구간 */
+export const PERIODS = [
+  { id: 'am', label: '오전', start: '09:00', end: '13:00' },
+  { id: 'pm', label: '오후', start: '13:00', end: '18:00' },
+  { id: 'eve', label: '저녁', start: '18:00', end: '22:00' },
+] as const;
+
+/** free: 전부 비어 있음, some: 30분 이상 빈 시간이 있음, busy/booked: 빈 시간 없음(막은 이유) */
+export type PeriodState = 'free' | 'some' | BlockKind;
+
+export function periodStates(date: string, blocks: DayBlock[]): PeriodState[] {
+  return PERIODS.map((p) => {
+    const start = timeToMin(p.start);
+    const end = timeToMin(p.end);
+    let freeSteps = 0;
+    let total = 0;
+    let reason: BlockKind | null = null;
+    for (let m = start; m < end; m += STEP_MIN) {
+      total++;
+      const k = blockingKind(stamp(date, minToTime(m)), stamp(date, minToTime(m + STEP_MIN)), blocks);
+      if (!k) freeSteps++;
+      else if (k === 'busy' || !reason) reason = k;
+    }
+    if (freeSteps === total) return 'free';
+    if (freeSteps > 0) return 'some';
+    return reason ?? 'busy';
+  });
+}
+
+/** 칸에 쓸 짧은 요약. 예: "종일 가능", "저녁 가능", "오전·오후 가능" */
+export function daySummary(states: PeriodState[]): string {
+  const open = PERIODS.filter((_, i) => states[i] === 'free' || states[i] === 'some').map((p) => p.label);
+  if (open.length === 0) return '불가';
+  if (open.length === 3) return states.every((s) => s === 'free') ? '종일 가능' : '일부 시간 가능';
+  return `${open.join('·')} 가능`;
+}
+

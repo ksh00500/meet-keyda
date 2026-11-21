@@ -88,3 +88,20 @@ describe('반복 일정', () => {
     expect(expandRepeat({ weekdays: [0, 1, 2, 3, 4, 5, 6], startTime: '09:00', endTime: '10:00', from: '2026-01-01', until: '2026-12-31' }).ok).toBe(false);
   });
 });
+
+describe('캘린더 칸 세 구간', async () => {
+  const { periodStates, daySummary } = await import('../server/domain/availability.js');
+  it('저녁 불가, 점심 예약이면 오전 some · 오후 some · 저녁 busy', () => {
+    const blocks = [
+      { start: '2026-12-01T11:30', end: '2026-12-01T14:00', kind: 'booked' as const },
+      { start: '2026-12-01T19:00', end: '2026-12-01T22:00', kind: 'busy' as const },
+    ];
+    const s = periodStates('2026-12-01', blocks);
+    expect(s).toEqual(['some', 'some', 'some']);
+    expect(daySummary(s)).toBe('일부 시간 가능');
+    const s2 = periodStates('2026-12-01', [{ start: '2026-12-01T18:00', end: '2026-12-01T22:00', kind: 'busy' as const }]);
+    expect(s2).toEqual(['free', 'free', 'busy']);
+    expect(daySummary(s2)).toBe('오전·오후 가능');
+    expect(daySummary(periodStates('2026-12-01', []))).toBe('종일 가능');
+  });
+});

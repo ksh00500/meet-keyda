@@ -270,42 +270,79 @@ button:disabled {
   text-align: center;
 }
 .legend {
-  list-style: none;
   display: flex;
   flex-wrap: wrap;
-  gap: 4px 14px;
-  padding: 0;
-  margin: 2px 6px 12px;
+  align-items: center;
+  gap: 6px 10px;
+  margin: 2px 6px 14px;
   font-size: var(--fs-xs);
   color: var(--ink-soft);
 }
-.legend li {
+.legend__sample {
+  display: inline-grid;
+  grid-template-columns: repeat(3, 14px);
+  gap: 2px;
+}
+.legend__sample .seg {
+  height: 8px;
+}
+.legend__text b {
+  color: var(--ink);
+  font-weight: 700;
+}
+.legend__keys {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  width: 100%;
+}
+.legend__keys > span {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 5px;
 }
-.swatch {
-  width: 14px;
-  height: 14px;
-  border-radius: 4px;
-  border: 1px solid rgba(31, 42, 42, 0.3);
+.legend__keys .seg {
+  width: 16px;
+  height: 8px;
 }
-.swatch--free {
-  background: var(--paper);
+
+/* 하루 세 구간 표시 (오전·오후·저녁) */
+.segs {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 2px;
 }
-.swatch--partial {
-  background: linear-gradient(90deg, var(--paper) 55%, var(--salmon) 55%);
+.seg {
+  display: block;
+  height: 7px;
+  border-radius: 3px;
 }
-.swatch--full {
-  background: var(--hatch);
+.seg--free {
+  background: var(--teal);
 }
-.swatch--booked {
+.seg--some {
+  background: #d3e9e8;
+  box-shadow: inset 0 0 0 1.5px var(--teal);
+}
+.seg--busy {
+  background: repeating-linear-gradient(135deg, var(--salmon) 0 3px, #fbd5cd 3px 6px);
+}
+.seg--booked {
   background: var(--booked);
 }
-.swatch--mine {
-  background: var(--lemon);
+.dot {
+  display: inline-block;
+  width: 9px;
+  height: 9px;
   border-radius: 999px;
-  border-color: var(--ink);
+  border: 1.5px solid var(--ink);
+  flex: none;
+}
+.dot--pending {
+  background: var(--lemon);
+}
+.dot--confirmed {
+  background: var(--teal);
 }
 
 .grid {
@@ -332,26 +369,32 @@ button:disabled {
 }
 .day {
   position: relative;
-  min-height: 60px;
-  border: 1.5px solid var(--line);
+  min-height: 62px;
+  border: 1.5px solid transparent;
   border-radius: var(--r);
   background: var(--paper);
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  gap: 4px;
-  padding: 6px 5px;
+  gap: 3px;
+  padding: 6px 5px 6px;
   text-align: left;
+  box-shadow: 0 1px 0 rgba(31, 42, 42, 0.06);
   transition: border-color 0.12s ease, transform 0.08s ease;
 }
 @media (min-width: 560px) {
   .day {
-    min-height: 76px;
-    padding: 8px 7px;
+    min-height: 84px;
+    padding: 8px 8px 8px;
+  }
+  .seg {
+    height: 9px;
   }
 }
-.day:hover:not(:disabled) {
-  border-color: var(--teal-deep);
+@media (hover: hover) {
+  .day:hover:not(:disabled) {
+    border-color: var(--teal-deep);
+  }
 }
 .day:active:not(:disabled) {
   transform: scale(0.96);
@@ -366,40 +409,39 @@ button:disabled {
   font-size: var(--fs-sm);
   font-variant-numeric: tabular-nums;
 }
-.day__mine {
-  width: 10px;
-  height: 10px;
-  border-radius: 999px;
-  border: 1.5px solid var(--ink);
-}
-.day__mine--pending {
-  background: var(--lemon);
-}
-.day__mine--confirmed {
-  background: var(--teal);
-}
-.day__today {
+.day__note {
   font-size: 11px;
-  font-weight: 700;
+  font-weight: 600;
+  color: var(--ink-soft);
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.day__note--today {
   color: var(--teal-deep);
+  font-weight: 700;
+}
+.day__note--full {
+  color: var(--danger);
+}
+/* 좁은 휴대폰 칸에는 요약 글자 대신 세 칸 표시만 (오늘·불가는 남김) */
+@media (max-width: 559px) {
+  .day__note:not(.day__note--today):not(.day__note--full) {
+    visibility: hidden;
+  }
 }
 .day--closed {
   background: transparent;
-  border-color: transparent;
+  box-shadow: none;
   color: rgba(31, 42, 42, 0.3);
 }
 .day--full {
-  background: var(--hatch);
-  border-color: transparent;
-  color: var(--ink);
+  background: #fbe4de;
+  box-shadow: none;
 }
-.day__tag {
-  font-size: 11px;
-  font-weight: 700;
-  background: rgba(255, 250, 240, 0.92);
-  border-radius: 6px;
-  padding: 0 5px;
-  align-self: flex-start;
+.day--full .day__num {
+  color: rgba(31, 42, 42, 0.55);
 }
 .day--selected {
   border-color: var(--ink);
