@@ -8,7 +8,10 @@ import { monthLabel, shiftMonth } from '../format.js';
 import { DayPanel } from './DayPanel.js';
 import { DEFAULT_FROM, DEFAULT_TO, Timeline } from './Timeline.js';
 
-const WEEK = ['일', '월', '화', '수', '목', '금', '토'];
+const WEEK = ['일', '월', '화', '수', '목', '금', '토']; // weekday() 순서(0=일)로 찾는 이름표
+// 한국식으로 월요일부터 시작
+const HEADER_ORDER = [1, 2, 3, 4, 5, 6, 0];
+const mondayIndex = (date: string) => (weekday(date) + 6) % 7;
 const CLOSED_LABEL = '신청 기간 아님';
 type View = 'month' | 'week';
 type Mine = Map<string, 'pending' | 'confirmed'>;
@@ -24,8 +27,9 @@ function savedView(): View {
   return 'month';
 }
 
+/** 그 날짜가 속한 주의 월요일 */
 function weekStart(date: string): string {
-  return addDays(date, -weekday(date));
+  return addDays(date, -mondayIndex(date));
 }
 
 export function CalendarPage({ config }: { config: Config }) {
@@ -36,7 +40,9 @@ export function CalendarPage({ config }: { config: Config }) {
 
   const [view, setViewState] = useState<View>(savedView);
   const [month, setMonth] = useState(firstMonth);
-  const [week, setWeek] = useState(firstWeek);
+  // 첫 주에 신청 가능한 날이 1–2일뿐이면(예: 토요일에 접속) 다음 주부터 보여 준다. 이전 주 버튼으로 돌아갈 수 있다
+  const startWeek = addDays(firstWeek, 7) <= addDays(config.bookableFrom, 2) && firstWeek < lastWeek ? addDays(firstWeek, 7) : firstWeek;
+  const [week, setWeek] = useState(startWeek);
   const [cache, setCache] = useState<Record<string, CalendarDay[]>>({});
   const [error, setError] = useState<string | null>(null);
   const [selected, setSelected] = useState<string | null>(null);
@@ -52,7 +58,7 @@ export function CalendarPage({ config }: { config: Config }) {
     }
     // 보던 위치를 이어서: 월간 → 그 달의 첫 신청 가능 주, 주간 → 그 주의 달
     if (v === 'week') {
-      const start = weekStart(month === firstMonth ? config.bookableFrom : `${month}-01`);
+      const start = month === firstMonth ? startWeek : weekStart(`${month}-01`);
       setWeek(start < firstWeek ? firstWeek : start > lastWeek ? lastWeek : start);
     } else {
       const m = addDays(week, 3).slice(0, 7);
@@ -125,17 +131,23 @@ export function CalendarPage({ config }: { config: Config }) {
 
   // 월간: 첫 달은 신청 가능한 날이 있는 주부터
   const monthDaysShown = (cache[month] ?? []).filter((d) => month !== firstMonth || d.date >= firstWeek);
-  const lead = monthDaysShown.length ? weekday(monthDaysShown[0].date) : 0;
+  const lead = monthDaysShown.length ? mondayIndex(monthDaysShown[0].date) : 0;
+  // 주간: 첫 주의 지난 날짜(오늘 포함)는 줄을 만들지 않는다
   const weekDays = Array.from({ length: 7 }, (_, i) => byDate.get(addDays(week, i))).filter(
-    (d): d is CalendarDay => !!d,
+    (d): d is CalendarDay => !!d && d.date >= config.bookableFrom,
   );
 
+  // 주간 제목은 보이는 첫 날부터 (첫 주는 지난 날을 숨기므로)
+  const wFrom = week < config.bookableFrom ? config.bookableFrom : week;
+  const wTo = addDays(week, 6);
   const title =
     view === 'month'
       ? monthLabel(month)
-      : `${Number(week.slice(5, 7))}월 ${Number(week.slice(8))}일 – ${
-          addDays(week, 6).slice(5, 7) === week.slice(5, 7) ? '' : `${Number(addDays(week, 6).slice(5, 7))}월 `
-        }${Number(addDays(week, 6).slice(8))}일`;
+      : wFrom === wTo
+        ? `${Number(wFrom.slice(5, 7))}월 ${Number(wFrom.slice(8))}일`
+        : `${Number(wFrom.slice(5, 7))}월 ${Number(wFrom.slice(8))}일 – ${
+            wTo.slice(5, 7) === wFrom.slice(5, 7) ? '' : `${Number(wTo.slice(5, 7))}월 `
+          }${Number(wTo.slice(8))}일`;
   const canPrev = view === 'month' ? month > firstMonth : week > firstWeek;
   const canNext = view === 'month' ? month < lastMonth : week < lastWeek;
   const go = (delta: number) =>
@@ -231,9 +243,9 @@ export function CalendarPage({ config }: { config: Config }) {
           ) : view === 'month' ? (
             <>
               <div className="grid grid--week" aria-hidden>
-                {WEEK.map((w, i) => (
-                  <span key={w} className={i === 0 ? 'week week--sun' : i === 6 ? 'week week--sat' : 'week'}>
-                    {w}
+                {HEADER_ORDER.map((i) => (
+                  <span key={i} className={i === 0 ? 'week week--sun' : i === 6 ? 'week week--sat' : 'week'}>
+                    {WEEK[i]}
                   </span>
                 ))}
               </div>

@@ -128,6 +128,12 @@
           "saved_at": "2026-11-21T07:42:06+00:00",
           "note": "범례, 12월 점검",
           "stage": "build"
+        },
+        {
+          "sha256": "c758607a41dedd232d4496a82e1ef32f4b619e638158f37db4570a6ca20d28a3",
+          "saved_at": "2026-11-21T07:46:41+00:00",
+          "note": "월요일 시작",
+          "stage": "build"
         }
       ]
     }
@@ -571,6 +577,32 @@
           "log_sha256": "755879322b3e0f522d3ef291389d2e304472766ce42f232fc4f249ecfbe8f1b6"
         }
       ]
+    },
+    {
+      "id": "T16",
+      "title": "T16 주 시작을 월요일로",
+      "must": true,
+      "status": "verified",
+      "history": [
+        {
+          "status": "todo",
+          "at": "2026-11-21T07:46:40+00:00"
+        },
+        {
+          "status": "verified",
+          "note": "node tests/e2e/weekview.cjs, december.cjs (+ shots, flow2, timeline, vitest)",
+          "at": "2026-11-21T07:46:41+00:00"
+        }
+      ],
+      "evidence": [
+        {
+          "command": "node tests/e2e/weekview.cjs, december.cjs (+ shots, flow2, timeline, vitest)",
+          "exit_code": 0,
+          "at": "2026-11-21T07:46:41+00:00",
+          "log": "logs/e2e-weekview.log",
+          "log_sha256": "7bca8e97340c7bbb109e1ea5135ed8922b4969a2b142587bd5fb3e870df72eb4"
+        }
+      ]
     }
   ],
   "cuts": [
@@ -605,5 +637,5 @@
       "at": "2026-11-21T06:00:36+00:00"
     }
   ],
-  "updated_at": "2026-11-21T07:42:06+00:00"
+  "updated_at": "2026-11-21T07:46:41+00:00"
 }
